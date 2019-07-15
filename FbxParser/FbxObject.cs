@@ -51,6 +51,50 @@ namespace Fbx
             return DumpWithIndent(0, showProp);
         }
 
+        public virtual string DumpJson()
+        {
+            return Json(0);
+        }
+
+        protected string Json(int nest)
+        {
+            const int indentWidth = 2;
+            var indent = new string(' ', indentWidth * nest);
+            var indent2 = new string(' ', indentWidth * (nest + 1));
+            var sb = new StringBuilder();
+            var firstItem = true;
+            sb.Append("{");
+            for (int i = 0; i < Properties.Count; i++)
+            {
+                if (firstItem)
+                {
+                    sb.AppendLine();
+                    firstItem = false;
+                }
+                else
+                {
+                    sb.AppendLine(",");
+                }
+                sb.AppendFormat("{0}\"[{1}]\" : {2}", indent2, i, Properties[i].DumpJson());
+            }
+            foreach (var child in Children)
+            {
+                if (firstItem)
+                {
+                    sb.AppendLine();
+                    firstItem = false;
+                }
+                else
+                {
+                    sb.AppendLine(",");
+                }
+                sb.AppendFormat("{0}\"{1}\" : {2}", indent2, child.Name, child.Json(nest + 1));
+            }
+            sb.AppendLine();
+            sb.AppendFormat("{0}{1}", indent, "}");
+            return sb.ToString();
+        }
+
         /// <summary>Dump info with indent</summary>
         /// <param name="nest">nest count</param>
         /// <param name="showProp">show properties</param>
@@ -94,6 +138,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxProperty"/></summary>
         /// <returns>summary string</returns>
         public abstract string Dump();
+
+        public abstract string DumpJson();
     }
 
     /// <summary>A not-array property infomation of <see cref="FbxNode"/></summary>
@@ -141,6 +187,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxIntProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"int : {Value}";
+
+        public override string DumpJson() => Value.ToString();
     }
 
     /// <summary>a <see cref="short"/> property of <see cref="FbxNode"/></summary>
@@ -150,6 +198,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxShortProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"short : {Value}";
+
+        public override string DumpJson() => Value.ToString();
     }
 
     /// <summary>a <see cref="long"/> property of <see cref="FbxNode"/></summary>
@@ -159,6 +209,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxLongProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"long : {Value}";
+
+        public override string DumpJson() => Value.ToString();
     }
 
     /// <summary>a <see cref="float"/> property of <see cref="FbxNode"/></summary>
@@ -168,6 +220,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxFloatProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"float : {Value}";
+
+        public override string DumpJson() => Value.ToString();
     }
 
     /// <summary>a <see cref="double"/> property of <see cref="FbxNode"/></summary>
@@ -177,6 +231,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxDoubleProperty"/></summary>
         /// <returns>summary string</returns>a
         public override string Dump() => $"double : {Value}";
+
+        public override string DumpJson() => Value.ToString();
     }
 
     /// <summary>a <see cref="bool"/> property of <see cref="FbxNode"/></summary>
@@ -186,6 +242,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxBoolProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"bool : {Value}";
+
+        public override string DumpJson() => Value ? "true" : "false";
     }
 
     /// <summary>a <see cref="string"/> property of <see cref="FbxNode"/></summary>
@@ -195,6 +253,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxStringProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"string : {Value}";
+
+        public override string DumpJson() => $"\"{Value}\"";
     }
 
     /// <summary>an array of <see cref="int"/> property of <see cref="FbxNode"/></summary>
@@ -204,6 +264,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxIntArrayProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"int[] : {string.Join(", ", Value)}";
+
+        public override string DumpJson() => $"[{string.Join(",", Value)}]";
     }
 
     /// <summary>an array of <see cref="long"/> property of <see cref="FbxNode"/></summary>
@@ -213,6 +275,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxLongArrayProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"long[] : {string.Join(", ", Value)}";
+
+        public override string DumpJson() => $"[{string.Join(",", Value)}]";
     }
 
     /// <summary>an array of <see cref="float"/> property of <see cref="FbxNode"/></summary>
@@ -222,6 +286,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxFloatArrayProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"float[] : {string.Join(", ", Value)}";
+
+        public override string DumpJson() => $"[{string.Join(",", Value)}]";
     }
 
     /// <summary>an array of <see cref="double"/> property of <see cref="FbxNode"/></summary>
@@ -231,6 +297,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxDoubleArrayProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"double[] : {string.Join(", ", Value)}";
+
+        public override string DumpJson() => $"[{string.Join(",", Value)}]";
     }
 
     /// <summary>an array of <see cref="bool"/> property of <see cref="FbxNode"/></summary>
@@ -240,6 +308,8 @@ namespace Fbx
         /// <summary>Dump summary of this <see cref="FbxBoolArrayProperty"/></summary>
         /// <returns>summary string</returns>
         public override string Dump() => $"bool[] : {string.Join(", ", Value)}";
+
+        public override string DumpJson() => $"[{string.Join(",", Value)}]";
     }
 
     /// <summary>a raw binary property of <see cref="FbxNode"/></summary>
@@ -253,5 +323,7 @@ namespace Fbx
             var hex = Value.Select(b => $"0x{b.ToString("x2")}");
             return $"raw bin : {string.Join(", ", hex)}";
         }
+
+        public override string DumpJson() => $"[{string.Join(",", Value.Select(b => $"\"0x{b.ToString("x2")}\""))}]";
     }
 }
