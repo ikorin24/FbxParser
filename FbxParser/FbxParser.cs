@@ -300,7 +300,8 @@ namespace Fbx
 
         private void ParseFooter(BinaryReader reader, FbxObject fbxObj)
         {
-
+            // Footer does not have important information.
+            // No problem if skip parsing this section.
         }
 
         private bool[] GetBoolArray(byte[] array)
