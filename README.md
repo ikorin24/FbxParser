@@ -33,6 +33,13 @@ string dumped = fbxObj.Dump();
 Debug.WriteLine(dumped);
 ```
 
+Or watch it as a json.
+
+```cs
+string json = fbxObj.DumpJson();
+Debug.WriteLine(json);
+```
+
 ## License
 
 This is licensed under MIT.
