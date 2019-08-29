@@ -22,7 +22,7 @@ Parsing is very easy.
 using Fbx;
 // ~~~~~~~~~
 
-var parser = FbxParser();
+var parser = new FbxParser();
 var fbxObj = parser.Parse("somefile.fbx");
 ```
 
