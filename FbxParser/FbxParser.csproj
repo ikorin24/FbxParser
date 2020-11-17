@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
     <Authors>ikorin24</Authors>
     <Company />
     <Product />
-    <Copyright>© 2019 ikorin24</Copyright>
+    <Copyright>© 2020 ikorin24</Copyright>
     <RootNamespace>Fbx</RootNamespace>
   </PropertyGroup>
 
