@@ -1,6 +1,9 @@
 ﻿#nullable enable
 using System;
 using System.IO;
+using System.Diagnostics;
+using System.Linq;
+using System.Collections.Generic;
 using Xunit;
 using FbxTools;
 
@@ -8,58 +11,29 @@ namespace UnitTest
 {
     public class ParseTest
     {
-        private const string TestFbx = "test.fbx";
+        private const string TestFbx = "../../../testfile/Dice.fbx";
 
         [Fact]
         public void Parse()
         {
+            Assert.True(true);
             using var stream = File.OpenRead(TestFbx);
             using var fbx = FbxParser.Parse(stream);
             foreach(var node in fbx.Nodes) {
+                Dump(node);
+            }
+            return;
+
+            static void Dump(in FbxNode node)
+            {
                 foreach(var prop in node.Properties) {
-                    switch(prop.Type) {
-                        case FbxPropertyType.Int32:
-                            prop.AsInt32();
-                            break;
-                        case FbxPropertyType.Int16:
-                            prop.AsInt16();
-                            break;
-                        case FbxPropertyType.Int64:
-                            prop.AsInt64();
-                            break;
-                        case FbxPropertyType.Float:
-                            prop.AsFloat();
-                            break;
-                        case FbxPropertyType.Double:
-                            prop.AsDouble();
-                            break;
-                        case FbxPropertyType.Bool:
-                            prop.AsBool();
-                            break;
-                        case FbxPropertyType.String:
-                            prop.AsString();
-                            break;
-                        case FbxPropertyType.Int32Array:
-                            prop.AsInt32Array();
-                            break;
-                        case FbxPropertyType.Int64Array:
-                            prop.AsInt64Array();
-                            break;
-                        case FbxPropertyType.FloatArray:
-                            prop.AsFloatArray();
-                            break;
-                        case FbxPropertyType.DoubleArray:
-                            prop.AsDoubleArray();
-                            break;
-                        case FbxPropertyType.BoolArray:
-                            prop.AsBoolArray();
-                            break;
-                        case FbxPropertyType.ByteArray:
-                            prop.AsByteArray();
-                            break;
-                        default:
-                            break;
+                    if(prop.Type == FbxPropertyType.Int32) {
+                        Debug.WriteLine(prop.AsInt32());
                     }
+                }
+
+                foreach(var n in node.Children) {
+                    Dump(n);
                 }
             }
         }

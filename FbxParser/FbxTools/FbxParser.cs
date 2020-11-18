@@ -104,23 +104,22 @@ namespace FbxTools
                 return false;
             }
 
-            node = new FbxNode();
+            node = default;
             try {
-                node._properties = new UnsafeRawArray<FbxProperty>((int)propertyCount);
-                node._children = new UnsafeRawList<FbxNode>(4);
-                node._name = new RawString(nameLen);
-                var name = node._name.AsSpan();
+                node = new FbxNode(new RawString(nameLen), (int)propertyCount);
+                var name = node.NameInternal;
+                var properties = node.PropertiesInternal;
                 reader.Read(name);
                 SanitizeString(name);
                 for(int i = 0; i < (int)propertyCount; i++) {
-                    ParseProperty(reader, ref node._properties[i]);
+                    ParseProperty(reader, ref properties[i]);
                 }
                 var hasChildren = (ulong)reader.BaseStream.Position != endOfRecord;
                 var hasNullRecord = hasChildren || propertyCount == 0;
                 if(hasChildren || hasNullRecord) {
                     while(true) {
                         if(!ParseNodeRecord(reader, version, out var child)) { break; }
-                        node._children.Add(child);
+                        node.AddChild(child);
                     }
                 }
             }

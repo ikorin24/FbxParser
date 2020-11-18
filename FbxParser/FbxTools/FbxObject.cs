@@ -54,17 +54,64 @@ namespace FbxTools
 
     public unsafe struct FbxNode
     {
-        internal UnsafeRawList<FbxNode> _children;
-        internal UnsafeRawArray<FbxProperty> _properties;
-        internal RawString _name;
+        private FbxNode* _children;
+        private int _childrenCapacity;
+        private int _childrenCount;
 
-        public readonly int ChildrenCount => _children.Count;
+        private UnsafeRawArray<FbxProperty> _properties;
+        private RawString _name;
 
-        public Span<FbxNode> Children => _children.AsSpan();
+        internal readonly Span<byte> NameInternal => _name.AsSpan();
+
+        internal readonly Span<FbxProperty> PropertiesInternal => _properties.AsSpan();
+
+        public readonly int ChildrenCount => _childrenCount;
+
+        public ReadOnlySpan<FbxNode> Children => MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>(_children), _childrenCount);
 
         public readonly int PropertiesCount => _properties.Length;
 
-        public Span<FbxProperty> Properties => _properties.AsSpan();
+        public ReadOnlySpan<FbxProperty> Properties => _properties.AsSpan();
+
+        internal FbxNode(RawString name, int propCount)
+        {
+            _name = name;
+            _properties = new UnsafeRawArray<FbxProperty>(propCount);
+
+            const int InitialCapacity = 16;
+            _children = (FbxNode*)Marshal.AllocHGlobal(InitialCapacity * sizeof(FbxNode));
+            _childrenCapacity = InitialCapacity;
+            _childrenCount = 0;
+        }
+
+        internal void AddChild(in FbxNode node)
+        {
+            if(_childrenCount >= _childrenCapacity) {
+                ExtendChildren();
+            }
+            _children[_childrenCount] = node;
+            _childrenCount++;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]  // uncommon path
+        private void ExtendChildren()
+        {
+            FbxNode* children = null;
+            var newLen = _childrenCapacity == 0 ? 4 : _childrenCapacity * 2;
+            try {
+                children = (FbxNode*)Marshal.AllocHGlobal(newLen * sizeof(FbxNode));
+                Buffer.MemoryCopy(_children, children, newLen * sizeof(FbxNode), _childrenCapacity * sizeof(FbxNode));
+            }
+            catch {
+                Marshal.FreeHGlobal((IntPtr)children);
+                throw;
+            }
+            finally {
+                Marshal.FreeHGlobal((IntPtr)_children);
+                _children = children;
+                _childrenCapacity = newLen;
+            }
+        }
 
         internal void Free()
         {
@@ -74,11 +121,11 @@ namespace FbxTools
             _properties.Dispose();
             _properties = default;
 
-            for(int i = 0; i < _children.Count; i++) {
+            for(int i = 0; i < _childrenCount; i++) {
                 _children[i].Free();
             }
-            _children.Dispose();
-            _children = default;
+            Marshal.FreeHGlobal((IntPtr)_children);
+            _children = null;
 
             _name.Dispose();
         }

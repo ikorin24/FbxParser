@@ -19,7 +19,7 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal RawString(int byteLength)
         {
-            Debug.Assert(byteLength > 0);
+            Debug.Assert(byteLength >= 0);
 
             if(byteLength == 0) {
                 this = default;
