@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-namespace FbxTools
+namespace FbxTools.Internal
 {
     [DebuggerDisplay("{ToString()}")]
     [StructLayout(LayoutKind.Sequential)]
@@ -14,7 +14,7 @@ namespace FbxTools
         private readonly IntPtr _headPointer;
         private readonly int _byteLength;
         public readonly int ByteLength => _byteLength;
-        internal readonly IntPtr Ptr => _headPointer;
+        public readonly IntPtr Ptr => _headPointer;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal RawString(int byteLength)
@@ -25,7 +25,7 @@ namespace FbxTools
                 this = default;
             }
             else {
-                //UnmanagedMemoryChecker.RegisterNewAllocatedBytes(_byteLength);
+                UnmanagedMemoryHelper.RegisterNewAllocatedBytes(byteLength);
                 _headPointer = Marshal.AllocHGlobal(byteLength);
                 _byteLength = byteLength;
             }
@@ -45,7 +45,7 @@ namespace FbxTools
         public void Dispose()
         {
             if(_headPointer != IntPtr.Zero) {
-                //UnmanagedMemoryChecker.RegisterReleasedBytes(_byteLength);
+                UnmanagedMemoryHelper.RegisterReleasedBytes(_byteLength);
                 Marshal.FreeHGlobal(_headPointer);
                 Unsafe.AsRef(_headPointer) = IntPtr.Zero;     // Clear pointer into null for safety.
             }
@@ -61,27 +61,5 @@ namespace FbxTools
         }
 
         public override int GetHashCode() => HashCode.Combine(_headPointer, _byteLength);
-    }
-
-    [DebuggerDisplay("{ToString()}")]
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe readonly struct ReadOnlyRawString : IEquatable<ReadOnlyRawString>
-    {
-        private readonly RawString _rawString;
-        public readonly int ByteLength => _rawString.ByteLength;
-
-        internal ReadOnlyRawString(RawString rawString) => _rawString = rawString;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan<byte> AsSpan() => _rawString.AsSpan();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString() => _rawString.ToString();
-
-        public override bool Equals(object? obj) => obj is ReadOnlyRawString str && Equals(str);
-
-        public bool Equals(ReadOnlyRawString other) => _rawString.Equals(other._rawString);
-
-        public override int GetHashCode() => HashCode.Combine(_rawString);
     }
 }

@@ -45,6 +45,7 @@ namespace FbxTools.Internal
                 return;
             }
             Length = length;
+            UnmanagedMemoryHelper.RegisterNewAllocatedBytes(length * sizeof(T));
             Ptr = Marshal.AllocHGlobal(length * sizeof(T));
         }
 
@@ -62,6 +63,7 @@ namespace FbxTools.Internal
                 return;
             }
             Length = length;
+            UnmanagedMemoryHelper.RegisterNewAllocatedBytes(length * sizeof(T));
             Ptr = Marshal.AllocHGlobal(length * sizeof(T));
             if(zeroFill) {
                 MemoryMarshal.CreateSpan(ref Unsafe.AsRef<T>((T*)Ptr), length).Clear();
@@ -72,6 +74,7 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
+            UnmanagedMemoryHelper.RegisterReleasedBytes(Length * sizeof(T));
             Marshal.FreeHGlobal(Ptr);
             Unsafe.AsRef(Length) = 0;
             Unsafe.AsRef(Ptr) = default;

@@ -2,10 +2,12 @@
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 using Xunit;
 using FbxTools;
+using FbxTools.Internal;
 
 namespace UnitTest
 {
@@ -16,26 +18,11 @@ namespace UnitTest
         [Fact]
         public void Parse()
         {
-            Assert.True(true);
-            using var stream = File.OpenRead(TestFbx);
-            using var fbx = FbxParser.Parse(stream);
-            foreach(var node in fbx.Nodes) {
-                Dump(node);
+            using(var stream = File.OpenRead(TestFbx))
+            using(var fbx = FbxParser.Parse(stream)) {
+                Assert.True(fbx.NodesCount > 0);
             }
-            return;
-
-            static void Dump(in FbxNode node)
-            {
-                foreach(var prop in node.Properties) {
-                    if(prop.Type == FbxPropertyType.Int32) {
-                        Debug.WriteLine(prop.AsInt32());
-                    }
-                }
-
-                foreach(var n in node.Children) {
-                    Dump(n);
-                }
-            }
+            UnmanagedMemoryHelper.AssertResourceReleased();
         }
     }
 }

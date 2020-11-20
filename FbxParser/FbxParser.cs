@@ -1,373 +1,428 @@
-﻿using System;
-using System.Linq;
-using System.Text;
+﻿#nullable enable
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.IO.Compression;
+using FbxTools.Internal;
 
-namespace Fbx
+namespace FbxTools
 {
-    public class FbxParser
+    public static class FbxParser
     {
-        #region private member
-        /// <summary>Magic Word of Binary FBX</summary>
-        private static byte[] MAGIC_WORD = new byte[23]
+        // MemoryStreamUM instance can be reused after disposing.
+        [ThreadStatic]
+        private static MemoryStreamUM? _ms;
+
+        // No allocation by optimization. Bytes data are embedded in dll.
+        private static ReadOnlySpan<byte> MagicWord => new byte[23]
         {
             0x4B, 0x61, 0x79, 0x64, 0x61, 0x72, 0x61, 0x20,
             0x46, 0x42, 0x58, 0x20, 0x42, 0x69, 0x6E, 0x61,
             0x72, 0x79, 0x20, 0x20, 0x00, 0x1a, 0x00,
         };
 
-        private const byte BOOL_PROPERTY = 0x43;      // 'C'
-        private const byte INT16_PROPERTY = 0x59;     // 'Y'
-        private const byte INT32_PROPERTY = 0x49;     // 'I'
-        private const byte FLOAT_PROPERTY = 0x46;     // 'F'
-        private const byte DOUBLE_PROPERTY = 0x44;    // 'D'
-        private const byte INT64_PROPERTY = 0x4C;     // 'L'
+        private const byte BOOL_PROPERTY = (byte)'C';
+        private const byte INT16_PROPERTY = (byte)'Y';
+        private const byte INT32_PROPERTY = (byte)'I';
+        private const byte FLOAT_PROPERTY = (byte)'F';
+        private const byte DOUBLE_PROPERTY = (byte)'D';
+        private const byte INT64_PROPERTY = (byte)'L';
 
-        private const byte BOOL_ARRAY_PROPERTY = 0x62;    // 'b'
-        private const byte INT32_ARRAY_PROPERTY = 0x69;   // 'i'
-        private const byte FLOAT_ARRAY_PROPERTY = 0x66;   // 'f'
-        private const byte DOUBLE_ARRAY_PROPERTY = 0x64;  // 'd'
-        private const byte INT64_ARRAY_PROPERTY = 0x6c;   // 'l'
+        private const byte BOOL_ARRAY_PROPERTY = (byte)'b';
+        private const byte INT32_ARRAY_PROPERTY = (byte)'i';
+        private const byte FLOAT_ARRAY_PROPERTY = (byte)'f';
+        private const byte DOUBLE_ARRAY_PROPERTY = (byte)'d';
+        private const byte INT64_ARRAY_PROPERTY = (byte)'l';
 
-        private const byte STRING_PROPERTY = 0x53;        // 'S'
-        private const byte RAW_BINARY_PROPERTY = 0x52;    // 'R'
-        #endregion
+        private const byte STRING_PROPERTY = (byte)'S';
+        private const byte RAW_BINARY_PROPERTY = (byte)'R';
 
-        #region Parse
-        /// <summary>Parse fbx file</summary>
-        /// <param name="filepath">fbx file name</param>
-        /// <returns>fbx object</returns>
-        public FbxObject Parse(string filepath)
+        public static unsafe FbxObject Parse(Stream stream)
         {
-            if (filepath == null) { throw new ArgumentNullException(filepath); }
-            if (!File.Exists(filepath)) { throw new FileNotFoundException("file not found", filepath); }
-            using (var stream = File.OpenRead(filepath))
-            using (var reader = new BinaryReader(stream))
-            {
-                var fbxObj = new FbxObject();
-                ParsePrivate(reader, fbxObj);
-                return fbxObj;
+            if(stream is null) {
+                throw new ArgumentNullException(nameof(stream));
+            }
+            var reader = new Reader(stream);
+
+            ParseHeader(reader, out var version);
+            UnsafeRawList<FbxNode> nodes = default;
+            try {
+                while(true) {
+                    if(!ParseNodeRecord(reader, version, out var node)) { break; }
+                    nodes.Add(node);
+                }
+                return new FbxObject(nodes);
+            }
+            catch {
+                nodes.Dispose();
+                throw;
             }
         }
 
-        /// <summary>Parse fbx file from specified stream</summary>
-        /// <param name="stream">stream of fbx file</param>
-        /// <returns>fbx object</returns>
-        public FbxObject Parse(Stream stream)
+        [SkipLocalsInit]
+        private static void ParseHeader(Reader reader, out int version)
         {
-            if (stream == null) { throw new ArgumentNullException(nameof(stream)); }
-            using (var reader = new BinaryReader(stream))
-            {
-                var fbxObj = new FbxObject();
-                ParsePrivate(reader, fbxObj);
-                return fbxObj;
+            Span<byte> magic = stackalloc byte[MagicWord.Length];
+            reader.Read(magic);
+            if(magic.SequenceEqual(magic) == false) {
+                throw new FormatException("Invalid header");
             }
-        }
-        #endregion
-
-        #region private Method
-        /// <summary>Parse entire fbx</summary>
-        /// <param name="reader">Binary Reader</param>
-        /// <param name="fbxObj">fbx object</param>
-        private void ParsePrivate(BinaryReader reader, FbxObject fbxObj)
-        {
-            ParseHeader(reader, fbxObj);
-            while (true)
-            {
-                if (!ParseNodeRecord(reader, fbxObj, out var node)) { break; }
-                fbxObj.Children.Add(node);
-            }
-            ParseFooter(reader, fbxObj);
+            reader.Int32(out version);
         }
 
-        /// <summary>Parse FBX Header</summary>
-        /// <param name="reader">Binary Reader</param>
-        /// <param name="fbxObj">fbx object</param>
-        private void ParseHeader(BinaryReader reader, FbxObject fbxObj)
+        private static unsafe bool ParseNodeRecord(Reader reader, int version, out FbxNode node)
         {
-            // read magic word, and check it
-            var magicWord = reader.ReadBytes(MAGIC_WORD.Length);
-            var valid = magicWord.Zip(MAGIC_WORD, (a, b) => a == b).All(x => x);
-            if (!valid) { throw new FormatException(); }
-
-            // read version
-            var version = (int)reader.ReadUInt32();
-            fbxObj.FormatVersion = version;
-        }
-
-        /// <summary>Parse Node Record. (Parse child node recursively)</summary>
-        /// <param name="reader">Binary Reader</param>
-        /// <param name="root">root node</param>
-        /// <param name="node">current node</param>
-        private bool ParseNodeRecord(BinaryReader reader, FbxObject root, out FbxNode node)
-        {
-            // read node infomation
             ulong endOfRecord;
             ulong propertyCount;
             ulong propertyListLen;
             byte nameLen;
-            if (root.FormatVersion >= 7400 || root.FormatVersion < 7500)
-            {
-                endOfRecord = reader.ReadUInt32();
-                propertyCount = reader.ReadUInt32();
-                propertyListLen = reader.ReadUInt32();
-                nameLen = reader.ReadByte();
+            if(version >= 7400 || version < 7500) {
+                reader.UInt32(out var eor);
+                endOfRecord = eor;
+                reader.UInt32(out var pc);
+                propertyCount = pc;
+                reader.UInt32(out var pll);
+                propertyListLen = pll;
+                reader.Byte(out nameLen);
             }
-            else if (root.FormatVersion >= 7500)
-            {
-                endOfRecord = reader.ReadUInt64();
-                propertyCount = reader.ReadUInt64();
-                propertyListLen = reader.ReadUInt64();
-                nameLen = reader.ReadByte();
+            else if(version >= 7500) {
+                reader.UInt64(out endOfRecord);
+                reader.UInt64(out propertyCount);
+                reader.UInt64(out propertyListLen);
+                reader.Byte(out nameLen);
             }
-            else
-            {
-                throw new FormatException();
+            else {
+                throw new NotSupportedException($"Format version '{version}' is not supported.");
             }
             var isNullRecord = (endOfRecord == 0) && (propertyCount == 0) && (propertyListLen == 0) && (nameLen == 0);
-            if (isNullRecord)
-            {
-                node = null;
+            if(isNullRecord) {
+                node = default;
                 return false;
             }
 
-            node = new FbxNode();
-            node.Name = GetAsciiString(reader.ReadBytes(nameLen));
-
-            // read properties
-            for (ulong i = 0; i < propertyCount; i++)
-            {
-                ParseProperty(reader, node);
-            }
-
-            // read child node
-            var hasChildren = (ulong)reader.BaseStream.Position != endOfRecord;
-            var hasNullRecord = hasChildren || propertyCount == 0;
-            if (hasChildren || hasNullRecord)
-            {
-                while (true)
-                {
-                    if (!ParseNodeRecord(reader, root, out var child)) { break; }
-                    node.Children.Add(child);
+            node = default;
+            try {
+                node = new FbxNode(new RawString(nameLen), (int)propertyCount);
+                var name = node.NameInternal;
+                var properties = node.PropertiesInternal;
+                reader.Read(name);
+                SanitizeString(name);
+                for(int i = 0; i < (int)propertyCount; i++) {
+                    ParseProperty(reader, ref properties[i]);
                 }
+                var hasChildren = (ulong)reader.BaseStream.Position != endOfRecord;
+                var hasNullRecord = hasChildren || propertyCount == 0;
+                if(hasChildren || hasNullRecord) {
+                    while(true) {
+                        if(!ParseNodeRecord(reader, version, out var child)) { break; }
+                        node.AddChild(child);
+                    }
+                }
+            }
+            catch {
+                node.Free();
+                node = default;
+                throw;
             }
             return true;
         }
 
-        /// <summary>Parse Node Property</summary>
-        /// <param name="reader">Binary Reader</param>
-        /// <param name="node">current node</param>
-        private void ParseProperty(BinaryReader reader, FbxNode node)
-        {
-            #region local func GetArrayProperty
-            byte[] GetArrayProperty(BinaryReader r, int typeSize)
-            {
-                var len = (int)r.ReadUInt32();
-                var encoded = r.ReadUInt32() != 0;
-                var compressedSize = (int)r.ReadUInt32();
-                if (encoded)
-                {
-                    var deflateMetaData = r.ReadInt16();
-                    const int deflateMetaDataSize = 2;
-                    var byteArray = r.ReadBytes(compressedSize - deflateMetaDataSize);
-                    using (var ms = new MemoryStream(byteArray))
-                    using (var ds = new DeflateStream(ms, CompressionMode.Decompress))
-                    {
-                        try
-                        {
-                            var decompressed = new byte[len * typeSize];
-                            if (ds.Read(decompressed, 0, decompressed.Length) != decompressed.Length) { throw new FormatException(); }
-                            return decompressed;
-                        }
-                        catch (InvalidDataException ex)
-                        {
-                            throw new FormatException("Parse fail", ex);
-                        }
-                    }
-                }
-                else
-                {
-                    var byteArray = r.ReadBytes(compressedSize);
-                    return byteArray;
-                }
-            }
-            #endregion
-
-            var propertyType = reader.ReadByte();
-            switch (propertyType)
-            {
-                case INT16_PROPERTY:
-                {
-                    var value = reader.ReadInt16();
-                    node.Properties.Add(new FbxShortProperty() { Value = value });
-                    break;
-                }
-                case BOOL_PROPERTY:
-                {
-                    var tmp = reader.ReadByte();
-                    // two types format exists. (Oh my gosh !! Fuuuuuuuu*k !!)
-                    // blender             -> true/false = 0x01/0x00
-                    // Autodesk production -> true/false = 'Y'/'T' = 0x59/0x54
-                    var value = (tmp == 0x00 || tmp == 0x54) ? false : true;
-                    node.Properties.Add(new FbxBoolProperty() { Value = value });
-                    break;
-                }
-                case INT32_PROPERTY:
-                {
-                    var value = reader.ReadInt32();
-                    node.Properties.Add(new FbxIntProperty() { Value = value });
-                    break;
-                }
-                case FLOAT_PROPERTY:
-                {
-                    var value = reader.ReadSingle();
-                    node.Properties.Add(new FbxFloatProperty() { Value = value });
-                    break;
-                }
-                case DOUBLE_PROPERTY:
-                {
-                    var value = reader.ReadDouble();
-                    node.Properties.Add(new FbxDoubleProperty() { Value = value });
-                    break;
-                }
-                case INT64_PROPERTY:
-                {
-                    var value = reader.ReadInt64();
-                    node.Properties.Add(new FbxLongProperty() { Value = value });
-                    break;
-                }
-                case STRING_PROPERTY:
-                {
-                    var len = (int)reader.ReadUInt32();
-                    var value = GetAsciiString(reader.ReadBytes(len));
-                    node.Properties.Add(new FbxStringProperty() { Value = value });
-                    break;
-                }
-
-                case BOOL_ARRAY_PROPERTY:
-                {
-                    var byteArray = GetArrayProperty(reader, 1);
-                    var prop = new FbxBoolArrayProperty() { Value = GetBoolArray(byteArray) };
-                    node.Properties.Add(prop);
-                    break;
-                }
-                case INT32_ARRAY_PROPERTY:
-                {
-                    var byteArray = GetArrayProperty(reader, 4);
-                    var prop = new FbxIntArrayProperty() { Value = GetIntArray(byteArray) };
-                    node.Properties.Add(prop);
-                    break;
-                }
-                case FLOAT_ARRAY_PROPERTY:
-                {
-                    var byteArray = GetArrayProperty(reader, 4);
-                    var prop = new FbxFloatArrayProperty() { Value = GetFloatArray(byteArray) };
-                    node.Properties.Add(prop);
-                    break;
-                }
-                case DOUBLE_ARRAY_PROPERTY:
-                {
-                    var byteArray = GetArrayProperty(reader, 8);
-                    var prop = new FbxDoubleArrayProperty() { Value = GetDoubleArray(byteArray) };
-                    node.Properties.Add(prop);
-                    break;
-                }
-                case INT64_ARRAY_PROPERTY:
-                {
-                    var byteArray = GetArrayProperty(reader, 8);
-                    var prop = new FbxLongArrayProperty() { Value = GetLongArray(byteArray) };
-                    node.Properties.Add(prop);
-                    break;
-                }
-                case RAW_BINARY_PROPERTY:
-                {
-                    var len = (int)reader.ReadUInt32();
-                    var value = reader.ReadBytes(len);
-                    var prop = new FbxBinaryProperty() { Value = value };
-                    node.Properties.Add(prop);
-                    break;
-                }
-
-                default:
-                {
-                    Debug.WriteLine($"[Skip Unknow Type Property] Position : {reader.BaseStream.Position}, type : {propertyType}");
-                    break;
-                }
-            }
-        }
-
-        private void ParseFooter(BinaryReader reader, FbxObject fbxObj)
+        private static void ParseFooter(Reader reader)
         {
             // Footer does not have important information.
             // No problem if skip parsing this section.
         }
 
-        private bool[] GetBoolArray(byte[] array)
+        private unsafe static void ParseProperty(Reader reader, ref FbxProperty property)
         {
-            return array.Select(b => b != 0).ToArray();
-        }
-
-        private int[] GetIntArray(byte[] array)
-        {
-            const int size = 4;
-            if (array.Length % size != 0) { throw new FormatException(); }
-            var ret = new int[array.Length / size];
-            for (int i = 0; i < ret.Length; i++)
-            {
-                ret[i] = BitConverter.ToInt32(array, i * size);
-            }
-            return ret;
-        }
-
-        private long[] GetLongArray(byte[] array)
-        {
-            const int size = 8;
-            if (array.Length % size != 0) { throw new FormatException(); }
-            var ret = new long[array.Length / size];
-            for (int i = 0; i < ret.Length; i++)
-            {
-                ret[i] = BitConverter.ToInt64(array, i * size);
-            }
-            return ret;
-        }
-
-        private float[] GetFloatArray(byte[] array)
-        {
-            const int size = 4;
-            if (array.Length % size != 0) { throw new FormatException(); }
-            var ret = new float[array.Length / size];
-            for (int i = 0; i < ret.Length; i++)
-            {
-                ret[i] = BitConverter.ToSingle(array, i * size);
-            }
-            return ret;
-        }
-
-        private double[] GetDoubleArray(byte[] array)
-        {
-            const int size = 8;
-            if (array.Length % size != 0) { throw new FormatException(); }
-            var ret = new double[array.Length / size];
-            for (int i = 0; i < ret.Length; i++)
-            {
-                ret[i] = BitConverter.ToDouble(array, i * size);
-            }
-            return ret;
-        }
-
-        private string GetAsciiString(byte[] bytes)
-        {
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                if (bytes[i] == 0x00 || bytes[i] == 0x01)
-                {
-                    bytes[i] = 0x3a;    // replace (0x00, 0x01) into 0x3a ':'
+            reader.Byte(out var propertyType);
+            switch(propertyType) {
+                case INT16_PROPERTY: {
+                    reader.Int16(out var value);
+                    property.SetInt16(value);
+                    break;
+                }
+                case BOOL_PROPERTY: {
+                    reader.Byte(out var value);
+                    // two types format exist. (Oh my gosh !! Fuuuuuuuu*k !!)
+                    // blender             -> true/false = 0x01/0x00
+                    // Autodesk production -> true/false = 'Y'/'T' = 0x59/0x54
+                    property.SetBool(value != 0x00 && value != 0x54);
+                    break;
+                }
+                case INT32_PROPERTY: {
+                    reader.Int32(out var value);
+                    property.SetInt32(value);
+                    break;
+                }
+                case FLOAT_PROPERTY: {
+                    reader.Float(out var value);
+                    property.SetFloat(value);
+                    break;
+                }
+                case DOUBLE_PROPERTY: {
+                    reader.Double(out var value);
+                    property.SetDouble(value);
+                    break;
+                }
+                case INT64_PROPERTY: {
+                    reader.Int64(out var value);
+                    property.SetInt64(value);
+                    break;
+                }
+                case STRING_PROPERTY: {
+                    reader.Int32(out var len);
+                    RawString str = default;
+                    try {
+                        str = new RawString(len);
+                        reader.Read(str.AsSpan());
+                        SanitizeString(str.AsSpan());
+                        property.SetString((byte*)str.Ptr, str.ByteLength);
+                    }
+                    catch {
+                        str.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case BOOL_ARRAY_PROPERTY: {
+                    reader.Int32(out var len);
+                    reader.UInt32(out var encoded);
+                    reader.UInt32(out var compressedSize);
+                    UnsafeRawArray<bool> array = default;            // Don't dispose
+                    try {
+                        if(encoded != 0) {
+                            array = Decode<bool>(reader, len, (int)compressedSize);
+                        }
+                        else {
+                            array = new UnsafeRawArray<bool>((int)compressedSize);
+                            reader.Read(MemoryMarshal.Cast<bool, byte>(array.AsSpan()));
+                        }
+                        property.SetBoolArray((bool*)array.Ptr, array.Length);
+                    }
+                    catch {
+                        array.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case INT32_ARRAY_PROPERTY: {
+                    reader.Int32(out var len);
+                    reader.UInt32(out var encoded);
+                    reader.UInt32(out var compressedSize);
+                    UnsafeRawArray<int> array = default;            // Don't dispose
+                    try {
+                        if(encoded != 0) {
+                            array = Decode<int>(reader, len, (int)compressedSize);
+                        }
+                        else {
+                            array = new UnsafeRawArray<int>((int)compressedSize);
+                            reader.Read(MemoryMarshal.Cast<int, byte>(array.AsSpan()));
+                        }
+                        property.SetInt32Array((int*)array.Ptr, array.Length);
+                    }
+                    catch {
+                        array.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case FLOAT_ARRAY_PROPERTY: {
+                    reader.Int32(out var len);
+                    reader.UInt32(out var encoded);
+                    reader.UInt32(out var compressedSize);
+                    UnsafeRawArray<float> array = default;            // Don't dispose
+                    try {
+                        if(encoded != 0) {
+                            array = Decode<float>(reader, len, (int)compressedSize);
+                        }
+                        else {
+                            array = new UnsafeRawArray<float>((int)compressedSize);
+                            reader.Read(MemoryMarshal.Cast<float, byte>(array.AsSpan()));
+                        }
+                        property.SetFloatArray((float*)array.Ptr, array.Length);
+                    }
+                    catch {
+                        array.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case DOUBLE_ARRAY_PROPERTY: {
+                    reader.Int32(out var len);
+                    reader.UInt32(out var encoded);
+                    reader.UInt32(out var compressedSize);
+                    UnsafeRawArray<double> array = default;
+                    try {
+                        if(encoded != 0) {
+                            array = Decode<double>(reader, len, (int)compressedSize);
+                        }
+                        else {
+                            array = new UnsafeRawArray<double>((int)compressedSize);
+                            reader.Read(MemoryMarshal.Cast<double, byte>(array.AsSpan()));
+                        }
+                        property.SetDoubleArray((double*)array.Ptr, array.Length);
+                    }
+                    catch {
+                        array.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case INT64_ARRAY_PROPERTY: {
+                    reader.Int32(out var len);
+                    reader.UInt32(out var encoded);
+                    reader.UInt32(out var compressedSize);
+                    UnsafeRawArray<long> array = default;
+                    try {
+                        if(encoded != 0) {
+                            array = Decode<long>(reader, len, (int)compressedSize);
+                        }
+                        else {
+                            array = new UnsafeRawArray<long>((int)compressedSize);
+                            reader.Read(MemoryMarshal.Cast<long, byte>(array.AsSpan()));
+                        }
+                        property.SetInt64Array((long*)array.Ptr, array.Length);
+                    }
+                    catch {
+                        array.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                case RAW_BINARY_PROPERTY: {
+                    reader.Int32(out var len);
+                    var buf = new UnsafeRawArray<byte>(len);
+                    try {
+                        reader.Read(buf.AsSpan());
+                        property.SetByteArray((byte*)buf.Ptr, buf.Length);
+                    }
+                    catch {
+                        buf.Dispose();
+                        throw;
+                    }
+                    break;
+                }
+                default: {
+                    Debug.WriteLine($"[Skip Unknow Type Property] Position : {reader.BaseStream.Position}, type : {propertyType}");
+                    break;
                 }
             }
-            return Encoding.ASCII.GetString(bytes);
+
+            #region (local func) Decode compressed array data
+            static UnsafeRawArray<T> Decode<T>(Reader reader, int arrayLength, int compressedSize) where T : unmanaged
+            {
+                const int deflateMetaDataSize = 2;
+                reader.Int16(out var _);            // deflateMetaData (not be used)
+
+                // read compressed data
+                using var buf = new UnsafeRawArray<byte>(compressedSize - deflateMetaDataSize);
+                reader.Read(buf.AsSpan());
+
+                // decompress data
+                var ptr = (byte*)buf.Ptr;
+                using var ms = (_ms is null) ? (_ms = new MemoryStreamUM(ptr, buf.Length)) : _ms.RefreshInstance(ptr, buf.Length);
+                using var ds = new DeflateStream(ms, CompressionMode.Decompress);
+                var decoded = new UnsafeRawArray<T>(arrayLength);
+                try {
+                    ds.Read(MemoryMarshal.Cast<T, byte>(decoded.AsSpan()));
+                }
+                catch {
+                    decoded.Dispose();
+                    throw;
+                }
+                return decoded;
+            }
+            #endregion
         }
-        #endregion private Method
+
+        private static void SanitizeString(Span<byte> bytes)
+        {
+            for(int i = 0; i < bytes.Length; i++) {
+                if(bytes[i] == 0x00 || bytes[i] == 0x01) {
+                    bytes[i] = (byte)':';       // replace (0x00, 0x01) into 0x3a ':'
+                }
+            }
+        }
+
+        private readonly ref struct Reader
+        {
+            public readonly Stream BaseStream;
+
+            public Reader(Stream stream)
+            {
+                BaseStream = stream;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Read(Span<byte> buffer)
+            {
+                if(BaseStream.Read(buffer) != buffer.Length) {
+                    ThrowEndOfStream();
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Byte(out byte value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref value, sizeof(byte)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Int16(out short value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<short, byte>(ref value), sizeof(short)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Int32(out int value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<int, byte>(ref value), sizeof(int)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void UInt32(out uint value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<uint, byte>(ref value), sizeof(uint)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Int64(out long value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<long, byte>(ref value), sizeof(long)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void UInt64(out ulong value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<ulong, byte>(ref value), sizeof(ulong)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Float(out float value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<float, byte>(ref value), sizeof(float)));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Double(out double value)
+            {
+                Unsafe.SkipInit(out value);
+                Read(MemoryMarshal.CreateSpan(ref Unsafe.As<double, byte>(ref value), sizeof(double)));
+            }
+
+            [DoesNotReturn]
+            private static void ThrowEndOfStream() => throw new EndOfStreamException();
+        }
     }
 }

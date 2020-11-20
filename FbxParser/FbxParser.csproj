@@ -9,7 +9,7 @@
     <Company />
     <Product />
     <Copyright>© 2020 ikorin24</Copyright>
-    <RootNamespace>Fbx</RootNamespace>
+    <RootNamespace>FbxTools</RootNamespace>
   </PropertyGroup>
 
 </Project>
