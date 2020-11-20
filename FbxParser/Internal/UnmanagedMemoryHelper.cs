@@ -12,6 +12,12 @@ namespace FbxTools.Internal
         private static int _allocatedSize;
 
         [Conditional(DEBUG)]
+        internal static void Initialize()
+        {
+            _allocatedSize = 0;
+        }
+
+        [Conditional(DEBUG)]
         internal static void RegisterNewAllocatedBytes(int newAllocatedByteLength)
         {
             if(newAllocatedByteLength == 0) {

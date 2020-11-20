@@ -13,12 +13,13 @@ namespace UnitTest
 {
     public class ParseTest
     {
-        private const string TestFbx = "../../../testfile/Dice.fbx";
-
-        [Fact]
-        public void Parse()
+        [Theory]
+        [InlineData("../../../testfile/Dice.fbx")]
+        [InlineData("../../../testfile/green_frog.fbx")]
+        public void Parse(string fileName)
         {
-            using(var stream = File.OpenRead(TestFbx))
+            UnmanagedMemoryHelper.Initialize();
+            using(var stream = File.OpenRead(fileName))
             using(var fbx = FbxParser.Parse(stream)) {
                 Assert.True(fbx.NodesCount > 0);
             }

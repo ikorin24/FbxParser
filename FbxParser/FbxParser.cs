@@ -219,7 +219,7 @@ namespace FbxTools
                             array = Decode<int>(reader, len, (int)compressedSize);
                         }
                         else {
-                            array = new UnsafeRawArray<int>((int)compressedSize);
+                            array = new UnsafeRawArray<int>((int)compressedSize / sizeof(int));
                             reader.Read(MemoryMarshal.Cast<int, byte>(array.AsSpan()));
                         }
                         property.SetInt32Array((int*)array.Ptr, array.Length);
@@ -240,7 +240,7 @@ namespace FbxTools
                             array = Decode<float>(reader, len, (int)compressedSize);
                         }
                         else {
-                            array = new UnsafeRawArray<float>((int)compressedSize);
+                            array = new UnsafeRawArray<float>((int)compressedSize / sizeof(float));
                             reader.Read(MemoryMarshal.Cast<float, byte>(array.AsSpan()));
                         }
                         property.SetFloatArray((float*)array.Ptr, array.Length);
@@ -261,7 +261,7 @@ namespace FbxTools
                             array = Decode<double>(reader, len, (int)compressedSize);
                         }
                         else {
-                            array = new UnsafeRawArray<double>((int)compressedSize);
+                            array = new UnsafeRawArray<double>((int)compressedSize / sizeof(double));
                             reader.Read(MemoryMarshal.Cast<double, byte>(array.AsSpan()));
                         }
                         property.SetDoubleArray((double*)array.Ptr, array.Length);
@@ -282,7 +282,7 @@ namespace FbxTools
                             array = Decode<long>(reader, len, (int)compressedSize);
                         }
                         else {
-                            array = new UnsafeRawArray<long>((int)compressedSize);
+                            array = new UnsafeRawArray<long>((int)compressedSize / sizeof(long));
                             reader.Read(MemoryMarshal.Cast<long, byte>(array.AsSpan()));
                         }
                         property.SetInt64Array((long*)array.Ptr, array.Length);

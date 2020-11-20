@@ -21,6 +21,8 @@ namespace FbxTools
 
         internal readonly Span<FbxProperty> PropertiesInternal => _properties.AsSpan();
 
+        public readonly ReadOnlySpan<byte> Name => _name.AsSpan();
+
         public readonly int ChildrenCount => _childrenCount;
 
         public readonly ReadOnlySpan<FbxNode> Children => MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>(_children), _childrenCount);
