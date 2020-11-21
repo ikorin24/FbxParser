@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System;
+using System.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -23,13 +24,13 @@ namespace FbxTools
             }
             return _type switch
             {
-                FbxPropertyType.Int32 => AsInt32().ToString(),
-                FbxPropertyType.Int16 => AsInt16().ToString(),
-                FbxPropertyType.Int64 => AsInt64().ToString(),
-                FbxPropertyType.Float => AsFloat().ToString(),
-                FbxPropertyType.Double => AsDouble().ToString(),
-                FbxPropertyType.Bool => AsBool().ToString(),
-                FbxPropertyType.String => AsString().ToString(),
+                FbxPropertyType.Int32 => $"int: '{AsInt32()}'",
+                FbxPropertyType.Int16 => $"short: '{AsInt16()}'",
+                FbxPropertyType.Int64 => $"long: '{AsInt64()}'",
+                FbxPropertyType.Float => $"float: '{AsFloat()}'",
+                FbxPropertyType.Double => $"double: '{AsDouble()}'",
+                FbxPropertyType.Bool => $"bool: '{AsBool()}'",
+                FbxPropertyType.String => $"string: '{Encoding.ASCII.GetString(AsString())}'",
                 FbxPropertyType.Int32Array => $"int[{_valueCountOfArray}]",
                 FbxPropertyType.Int64Array => $"long[{_valueCountOfArray}]",
                 FbxPropertyType.FloatArray => $"float[{_valueCountOfArray}]",

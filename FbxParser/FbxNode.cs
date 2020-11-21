@@ -9,6 +9,7 @@ using FbxTools.Internal;
 namespace FbxTools
 {
     /// <summary>Node structure of fbx</summary>
+    [DebuggerTypeProxy(typeof(FbxNodeDebuggerTypeProxy))]
     [DebuggerDisplay("{DebuggerDisplay()}")]
     public unsafe struct FbxNode
     {
@@ -95,6 +96,23 @@ namespace FbxTools
             _children = null;
 
             _name.Dispose();
+        }
+    }
+
+    internal class FbxNodeDebuggerTypeProxy
+    {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private FbxNode _entity;
+
+        public string Name => Encoding.ASCII.GetString(_entity.Name);
+
+        public ReadOnlySpan<FbxProperty> Properties => _entity.Properties;
+
+        public ReadOnlySpan<FbxNode> Children => _entity.Children;
+
+        public FbxNodeDebuggerTypeProxy(FbxNode entity)
+        {
+            _entity = entity;
         }
     }
 }

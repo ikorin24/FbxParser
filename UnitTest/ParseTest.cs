@@ -1,10 +1,5 @@
 ﻿#nullable enable
-using System;
 using System.IO;
-using System.Diagnostics;
-using System.Text;
-using System.Linq;
-using System.Collections.Generic;
 using Xunit;
 using FbxTools;
 using FbxTools.Internal;
