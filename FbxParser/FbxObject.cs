@@ -1,31 +1,17 @@
 ﻿#nullable enable
 using System;
-using System.Runtime.CompilerServices;
 using FbxTools.Internal;
 
 namespace FbxTools
 {
+    /// <summary>Fbx object</summary>
     public sealed unsafe class FbxObject : IDisposable
     {
         private UnsafeRawList<FbxNode> _nodes;
         private bool IsDisposed => _nodes.Ptr == IntPtr.Zero;
 
-        public int NodesCount => _nodes.Count;
-
+        /// <summary>Get <see cref="FbxNode"/>s of this <see cref="FbxObject"/></summary>
         public ReadOnlySpan<FbxNode> Nodes => _nodes.AsSpan();
-
-        public ref readonly FbxNode this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if((uint)index >= _nodes.Count) {
-                    ThrowOutOfRange();
-                    static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                return ref _nodes[index];
-            }
-        }
 
         internal FbxObject(in UnsafeRawList<FbxNode> nodes)
         {
@@ -34,6 +20,7 @@ namespace FbxTools
 
         ~FbxObject() => Dispose(false);
 
+        /// <summary>Release all memories <see cref="FbxObject"/> has</summary>
         public void Dispose()
         {
             if(IsDisposed) { return; }

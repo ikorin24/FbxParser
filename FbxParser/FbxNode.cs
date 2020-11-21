@@ -2,10 +2,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Text;
 using FbxTools.Internal;
 
 namespace FbxTools
 {
+    /// <summary>Node structure of fbx</summary>
+    [DebuggerDisplay("{DebuggerDisplay()}")]
     public unsafe struct FbxNode
     {
         // I want to use 'UnsafeRawList<FbxNode>' as children,
@@ -17,17 +21,17 @@ namespace FbxTools
         private UnsafeRawArray<FbxProperty> _properties;
         private RawString _name;
 
+        private string DebuggerDisplay() => $"{Encoding.ASCII.GetString(_name.AsSpan())}   (Properties={_properties.Length} Children={_childrenCount})";
+
         internal readonly Span<byte> NameInternal => _name.AsSpan();
 
         internal readonly Span<FbxProperty> PropertiesInternal => _properties.AsSpan();
 
+        /// <summary>Get name of the node</summary>
         public readonly ReadOnlySpan<byte> Name => _name.AsSpan();
 
-        public readonly int ChildrenCount => _childrenCount;
-
+        /// <summary>Get children nodes</summary>
         public readonly ReadOnlySpan<FbxNode> Children => MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>(_children), _childrenCount);
-
-        public readonly int PropertiesCount => _properties.Length;
 
         public readonly ReadOnlySpan<FbxProperty> Properties => _properties.AsSpan();
 

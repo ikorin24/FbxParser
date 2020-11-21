@@ -41,7 +41,7 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UnsafeRawList(int capacity)
         {
-            _array = new UnsafeRawArray<T>(capacity, zeroFill: true);
+            _array = new UnsafeRawArray<T>(capacity);
             _count = 0;
         }
 
@@ -51,7 +51,7 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UnsafeRawList(int capacity, bool zeroFill)
         {
-            _array = new UnsafeRawArray<T>(capacity, zeroFill);
+            _array = new UnsafeRawArray<T>(capacity);
             _count = 0;
         }
 

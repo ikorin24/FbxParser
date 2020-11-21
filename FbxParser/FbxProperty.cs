@@ -3,16 +3,42 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using FbxTools.Internal;
 
 namespace FbxTools
 {
     /// <summary>property of <see cref="FbxNode"/></summary>
+    [DebuggerDisplay("{DebuggerDisplay()}")]
     public unsafe struct FbxProperty
     {
         internal FbxPropertyType _type;
         internal int _valueCountOfArray;
         internal void* _ptrToValue;
+
+        private readonly string DebuggerDisplay()
+        {
+            if(_ptrToValue == null) {
+                return "";
+            }
+            return _type switch
+            {
+                FbxPropertyType.Int32 => AsInt32().ToString(),
+                FbxPropertyType.Int16 => AsInt16().ToString(),
+                FbxPropertyType.Int64 => AsInt64().ToString(),
+                FbxPropertyType.Float => AsFloat().ToString(),
+                FbxPropertyType.Double => AsDouble().ToString(),
+                FbxPropertyType.Bool => AsBool().ToString(),
+                FbxPropertyType.String => AsString().ToString(),
+                FbxPropertyType.Int32Array => $"int[{_valueCountOfArray}]",
+                FbxPropertyType.Int64Array => $"long[{_valueCountOfArray}]",
+                FbxPropertyType.FloatArray => $"float[{_valueCountOfArray}]",
+                FbxPropertyType.DoubleArray => $"double[{_valueCountOfArray}]",
+                FbxPropertyType.BoolArray => $"bool[{_valueCountOfArray}]",
+                FbxPropertyType.ByteArray => $"byte[{_valueCountOfArray}]",
+                _ => "",
+            };
+        }
 
         /// <summary>Get property type</summary>
         public readonly FbxPropertyType Type => _type;

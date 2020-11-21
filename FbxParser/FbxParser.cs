@@ -10,6 +10,7 @@ using FbxTools.Internal;
 
 namespace FbxTools
 {
+    /// <summary>Fbx parser class</summary>
     public static class FbxParser
     {
         // MemoryStreamUM instance can be reused after disposing.
@@ -40,6 +41,9 @@ namespace FbxTools
         private const byte STRING_PROPERTY = (byte)'S';
         private const byte RAW_BINARY_PROPERTY = (byte)'R';
 
+        /// <summary>Prase <see cref="Stream"/> to <see cref="FbxObject"/></summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
         public static unsafe FbxObject Parse(Stream stream)
         {
             if(stream is null) {

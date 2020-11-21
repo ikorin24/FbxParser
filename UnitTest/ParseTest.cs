@@ -21,7 +21,7 @@ namespace UnitTest
             UnmanagedMemoryHelper.Initialize();
             using(var stream = File.OpenRead(fileName))
             using(var fbx = FbxParser.Parse(stream)) {
-                Assert.True(fbx.NodesCount > 0);
+                Assert.True(fbx.Nodes.Length > 0);
             }
             UnmanagedMemoryHelper.AssertResourceReleased();
         }
