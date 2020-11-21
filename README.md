@@ -1,14 +1,12 @@
 # FBX Parser
 
-FBX file (```.fbx```) low-level Parser in C#.
+FBX file (`.fbx`) low-level Parser in C#.
 
-FBX is just a hierarchical structual format like json(```.json```), xml(```xml```), and so on.
-
-Generally, fbx file is for 3D-model file format, but this parser is not only for 3D-model file, just parse hierarchical structure of ```.fbx``` into C#-class.
+FBX is just a hierarchical structual format like json(`.json`), xml(`.xml`), and so on.
 
 ## Supported Format Version
 
-```.fbx``` file has some format version.
+`.fbx` file has some format version.
 
 - [x] ver7.4
 - [x] ver7.5
@@ -19,25 +17,13 @@ Generally, fbx file is for 3D-model file format, but this parser is not only for
 Parsing is very easy.
 
 ```cs
-using Fbx;
-// ~~~~~~~~~
+using System.IO;
+using FbxTools;
 
-var parser = new FbxParser();
-var fbxObj = parser.Parse("somefile.fbx");
-```
-
-For debugging or watching its hierarchical structure, use following.
-
-```cs
-string dumped = fbxObj.Dump();
-Debug.WriteLine(dumped);
-```
-
-Or watch it as a json.
-
-```cs
-string json = fbxObj.DumpJson();
-Debug.WriteLine(json);
+using var stream = File.OpenRead("your_file.fbx");
+using var fbxObj = FbxParser.Parse(stream);
+// Use fbx object here.
+// Its memory is released when disposed.
 ```
 
 ## License
