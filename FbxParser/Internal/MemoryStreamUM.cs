@@ -51,8 +51,9 @@ namespace FbxTools.Internal
 
         public override int Read(Span<byte> buffer)
         {
-            var readLen = (int)Math.Min(buffer.Length, _length - _pos);
+            var readLen = (int)Math.Min(buffer.Length, Math.Max(0, _length - _pos));
             new Span<byte>(_ptr + _pos, readLen).CopyTo(buffer);
+            _pos += readLen;
             return readLen;
         }
 
@@ -67,7 +68,7 @@ namespace FbxTools.Internal
                     break;
                 case SeekOrigin.End:
                     if(offset > _length) { throw new ArgumentOutOfRangeException(); }
-                    _pos = _length - offset;
+                    _pos = _length + offset;
                     break;
                 default:
                     throw new ArgumentException();
