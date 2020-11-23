@@ -1,5 +1,10 @@
 # FBX Parser
 
+<!--
+[![GitHub license](https://img.shields.io/github/license/ikorin24/FbxParser?color=009DFF)](https://github.com/ikorin24/FbxParser/blob/master/LICENSE)
+[![nuget](https://img.shields.io/badge/nuget-v1.0.0-009DFF)](https://www.nuget.org/packages/FbxParser)
+-->
+
 FBX file (`.fbx`) low-level Parser in C#.
 
 FBX is just a hierarchical structual format like json(`.json`), xml(`.xml`), and so on.
