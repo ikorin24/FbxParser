@@ -13,9 +13,9 @@ namespace FbxTools
     [DebuggerDisplay("{DebuggerDisplay()}")]
     public unsafe struct FbxProperty
     {
-        internal FbxPropertyType _type;
-        internal int _valueCountOfArray;
-        internal IntPtr _ptrToValue;
+        private FbxPropertyType _type;
+        private int _valueCountOfArray;
+        private IntPtr _ptrToValue;
 
         private readonly string DebuggerDisplay()
         {
