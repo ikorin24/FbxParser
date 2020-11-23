@@ -46,10 +46,19 @@ namespace FbxTools.Internal
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return Read(buffer.AsSpan(offset, count));
+            return ReadCore(buffer.AsSpan(offset, count));
         }
 
-        public override int Read(Span<byte> buffer)
+        public
+#if !NETSTANDARD2_0
+        override
+#endif
+        int Read(Span<byte> buffer)
+        {
+            return ReadCore(buffer);
+        }
+
+        private int ReadCore(Span<byte> buffer)
         {
             var readLen = (int)Math.Min(buffer.Length, Math.Max(0, _length - _pos));
             new Span<byte>(_ptr + _pos, readLen).CopyTo(buffer);

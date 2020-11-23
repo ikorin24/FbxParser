@@ -15,11 +15,11 @@ namespace FbxTools
     {
         internal FbxPropertyType _type;
         internal int _valueCountOfArray;
-        internal void* _ptrToValue;
+        internal IntPtr _ptrToValue;
 
         private readonly string DebuggerDisplay()
         {
-            if(_ptrToValue == null) {
+            if(_ptrToValue == IntPtr.Zero) {
                 return "";
             }
             return _type switch
@@ -30,7 +30,7 @@ namespace FbxTools
                 FbxPropertyType.Float => $"float: '{AsFloat()}'",
                 FbxPropertyType.Double => $"double: '{AsDouble()}'",
                 FbxPropertyType.Bool => $"bool: '{AsBool()}'",
-                FbxPropertyType.String => $"string: '{Encoding.ASCII.GetString(AsString())}'",
+                FbxPropertyType.String => $"string: '{Encoding.ASCII.GetString((byte*)_ptrToValue, _valueCountOfArray)}'",
                 FbxPropertyType.Int32Array => $"int[{_valueCountOfArray}]",
                 FbxPropertyType.Int64Array => $"long[{_valueCountOfArray}]",
                 FbxPropertyType.FloatArray => $"float[{_valueCountOfArray}]",
@@ -44,10 +44,10 @@ namespace FbxTools
         /// <summary>Get property type</summary>
         public readonly FbxPropertyType Type => _type;
 
-        private static void* Alloc(int byteSize)
+        private static IntPtr Alloc(int byteSize)
         {
             UnmanagedMemoryHelper.RegisterNewAllocatedBytes(byteSize);
-            return Marshal.AllocHGlobal(byteSize).ToPointer();
+            return Marshal.AllocHGlobal(byteSize);
         }
 
         internal void Free()
@@ -72,8 +72,8 @@ namespace FbxTools
             };
             UnmanagedMemoryHelper.RegisterReleasedBytes(size);
 #endif
-            Marshal.FreeHGlobal((IntPtr)_ptrToValue);
-            _ptrToValue = null;
+            Marshal.FreeHGlobal(_ptrToValue);
+            _ptrToValue = IntPtr.Zero;
             _valueCountOfArray = 0;
         }
 
@@ -110,7 +110,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.String;
             _valueCountOfArray = length;
-            _ptrToValue = strInHeap;
+            _ptrToValue = (IntPtr)strInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -145,7 +145,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.BoolArray;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -153,7 +153,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Int32Array;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,7 +161,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Int64Array;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -169,7 +169,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.FloatArray;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,7 +177,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.DoubleArray;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -185,7 +185,7 @@ namespace FbxTools
         {
             _type = FbxPropertyType.ByteArray;
             _valueCountOfArray = length;
-            _ptrToValue = arrayInHeap;
+            _ptrToValue = (IntPtr)arrayInHeap;
         }
         #endregion
 
@@ -227,7 +227,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<byte> AsString()
         {
             if(_type != FbxPropertyType.String) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<byte>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type <see cref="bool"/></summary>
@@ -267,7 +271,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<bool> AsBoolArray()
         {
             if(_type != FbxPropertyType.BoolArray) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<bool>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<bool>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<bool>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type like <see cref="int"/> array</summary>
@@ -277,7 +285,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<int> AsInt32Array()
         {
             if(_type != FbxPropertyType.Int32Array) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<int>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<int>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<int>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type like <see cref="long"/> array</summary>
@@ -287,7 +299,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<long> AsInt64Array()
         {
             if(_type != FbxPropertyType.Int64Array) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<long>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<long>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<long>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type like <see cref="float"/> array</summary>
@@ -297,7 +313,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<float> AsFloatArray()
         {
             if(_type != FbxPropertyType.FloatArray) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<float>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<float>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<float>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type like <see cref="double"/> array</summary>
@@ -307,7 +327,11 @@ namespace FbxTools
         public readonly ReadOnlySpan<double> AsDoubleArray()
         {
             if(_type != FbxPropertyType.DoubleArray) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<double>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<double>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<double>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
 
         /// <summary>Get property value of type like <see cref="byte"/> array</summary>
@@ -317,11 +341,17 @@ namespace FbxTools
         public readonly ReadOnlySpan<byte> AsByteArray()
         {
             if(_type != FbxPropertyType.ByteArray) { ThrowInvalidCast(_type); }
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>(_ptrToValue), _valueCountOfArray);
+#if NETSTANDARD2_0
+            return new ReadOnlySpan<byte>((void*)_ptrToValue, _valueCountOfArray);
+#else
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>((void*)_ptrToValue), _valueCountOfArray);
+#endif
         }
         #endregion
 
+#if NET5_0
         [DoesNotReturn]
+#endif
         private static void ThrowInvalidCast(FbxPropertyType type)
         {
             throw new InvalidCastException($"Property type is {type}.");

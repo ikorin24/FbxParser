@@ -66,7 +66,7 @@ namespace FbxTools.Internal
             UnmanagedMemoryHelper.RegisterNewAllocatedBytes(length * sizeof(T));
             Ptr = Marshal.AllocHGlobal(length * sizeof(T));
             if(zeroFill) {
-                MemoryMarshal.CreateSpan(ref Unsafe.AsRef<T>((T*)Ptr), length).Clear();
+                AsSpan().Clear();
             }
         }
 
@@ -109,7 +109,11 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan()
         {
+#if NETSTANDARD2_0
+            return new Span<T>((T*)Ptr, Length);
+#else
             return MemoryMarshal.CreateSpan(ref GetReference(), Length);
+#endif
         }
 
         /// <summary>Get <see cref="Span{T}"/> of type <see cref="T"/></summary>
@@ -119,7 +123,11 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start)
         {
+#if NETSTANDARD2_0
+            return new Span<T>((T*)Ptr + start, Length - start);
+#else
             return MemoryMarshal.CreateSpan(ref this[start], Length - start);
+#endif
         }
 
         /// <summary>Get <see cref="Span{T}"/> of type <see cref="T"/></summary>
@@ -130,7 +138,12 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start, int length)
         {
+#if NETSTANDARD2_0
+            return new Span<T>((T*)Ptr + start, length);
+#else
             return MemoryMarshal.CreateSpan(ref this[start], length);
+#endif
+
         }
     }
 

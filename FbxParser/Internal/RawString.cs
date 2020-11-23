@@ -35,11 +35,18 @@ namespace FbxTools.Internal
         public readonly override string ToString()
         {
             if(_byteLength == 0) { return string.Empty; }
-            return Encoding.UTF8.GetString((byte*)_headPointer, _byteLength);
+            return Encoding.ASCII.GetString((byte*)_headPointer, _byteLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly Span<byte> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef<byte>((void*)_headPointer), _byteLength);
+        public readonly Span<byte> AsSpan()
+        {
+#if NETSTANDARD2_0
+            return new Span<byte>((void*)_headPointer, _byteLength);
+#else
+            return MemoryMarshal.CreateSpan(ref Unsafe.AsRef<byte>((void*)_headPointer), _byteLength);
+#endif
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()

@@ -15,14 +15,15 @@ namespace FbxTools
     {
         // I want to use 'UnsafeRawList<FbxNode>' as children,
         // but TypeLoadException happens in xunit test. (It may bug of xunit.)
-        private FbxNode* _children;
+        //private FbxNode* _children;
+        private IntPtr _children;   // FbxNode*
         private int _childrenCapacity;
         private int _childrenCount;
 
         private UnsafeRawArray<FbxProperty> _properties;
         private RawString _name;
 
-        private string DebuggerDisplay() => $"{Encoding.ASCII.GetString(_name.AsSpan())}   (Properties={_properties.Length} Children={_childrenCount})";
+        private string DebuggerDisplay() => $"{_name.ToString()}   (Properties={_properties.Length} Children={_childrenCount})";
 
         internal readonly Span<byte> NameInternal => _name.AsSpan();
 
@@ -32,7 +33,12 @@ namespace FbxTools
         public readonly ReadOnlySpan<byte> Name => _name.AsSpan();
 
         /// <summary>Get children nodes</summary>
-        public readonly ReadOnlySpan<FbxNode> Children => MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>(_children), _childrenCount);
+        public readonly ReadOnlySpan<FbxNode> Children =>
+#if NETSTANDARD2_0
+            new ReadOnlySpan<FbxNode>((void*)_children, _childrenCount);
+#else
+            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>((void*)_children), _childrenCount);
+#endif
 
         public readonly ReadOnlySpan<FbxProperty> Properties => _properties.AsSpan();
 
@@ -42,7 +48,7 @@ namespace FbxTools
             _properties = new UnsafeRawArray<FbxProperty>(propCount);
 
             const int InitialCapacity = 16;
-            _children = (FbxNode*)Marshal.AllocHGlobal(InitialCapacity * sizeof(FbxNode));
+            _children = Marshal.AllocHGlobal(InitialCapacity * sizeof(FbxNode));
             UnmanagedMemoryHelper.RegisterNewAllocatedBytes(InitialCapacity * sizeof(FbxNode));
             _childrenCapacity = InitialCapacity;
             _childrenCount = 0;
@@ -53,7 +59,7 @@ namespace FbxTools
             if(_childrenCount >= _childrenCapacity) {
                 ExtendChildren();
             }
-            _children[_childrenCount] = node;
+            ((FbxNode*)_children)[_childrenCount] = node;
             _childrenCount++;
         }
 
@@ -65,7 +71,7 @@ namespace FbxTools
             try {
                 UnmanagedMemoryHelper.RegisterNewAllocatedBytes(newLen * sizeof(FbxNode));
                 children = (FbxNode*)Marshal.AllocHGlobal(newLen * sizeof(FbxNode));
-                Buffer.MemoryCopy(_children, children, newLen * sizeof(FbxNode), _childrenCapacity * sizeof(FbxNode));
+                Buffer.MemoryCopy((void*)_children, children, newLen * sizeof(FbxNode), _childrenCapacity * sizeof(FbxNode));
             }
             catch {
                 Marshal.FreeHGlobal((IntPtr)children);
@@ -73,9 +79,9 @@ namespace FbxTools
                 throw;
             }
             finally {
-                Marshal.FreeHGlobal((IntPtr)_children);
+                Marshal.FreeHGlobal(_children);
                 UnmanagedMemoryHelper.RegisterReleasedBytes(_childrenCapacity * sizeof(FbxNode));
-                _children = children;
+                _children = (IntPtr)children;
                 _childrenCapacity = newLen;
             }
         }
@@ -89,11 +95,11 @@ namespace FbxTools
             _properties = default;
 
             for(int i = 0; i < _childrenCount; i++) {
-                _children[i].Free();
+                ((FbxNode*)_children)[i].Free();
             }
             Marshal.FreeHGlobal((IntPtr)_children);
             UnmanagedMemoryHelper.RegisterReleasedBytes(_childrenCapacity * sizeof(FbxNode));
-            _children = null;
+            _children = default;
 
             _name.Dispose();
         }
@@ -104,7 +110,12 @@ namespace FbxTools
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private FbxNode _entity;
 
-        public string Name => Encoding.ASCII.GetString(_entity.Name);
+        public string Name =>
+#if NETSTANDARD2_0
+            Encoding.ASCII.GetString(_entity.Name.ToArray());
+#else
+            Encoding.ASCII.GetString(_entity.Name);
+#endif
 
         public ReadOnlySpan<FbxProperty> Properties => _entity.Properties;
 

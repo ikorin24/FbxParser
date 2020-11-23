@@ -1,5 +1,4 @@
-﻿#nullable enable
-using System.IO;
+﻿using System.IO;
 using Xunit;
 using FbxTools;
 using FbxTools.Internal;
