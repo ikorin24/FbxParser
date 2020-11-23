@@ -11,7 +11,7 @@ namespace FbxTools
 {
     /// <summary>property of <see cref="FbxNode"/></summary>
     [DebuggerDisplay("{DebuggerDisplay()}")]
-    public unsafe struct FbxProperty
+    public unsafe struct FbxProperty : IEquatable<FbxProperty>
     {
         private FbxPropertyType _type;
         private int _valueCountOfArray;
@@ -356,5 +356,19 @@ namespace FbxTools
         {
             throw new InvalidCastException($"Property type is {type}.");
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj) => obj is FbxProperty property && Equals(property);
+
+        /// <inheritdoc/>
+        public bool Equals(FbxProperty other)
+        {
+            return _type == other._type &&
+                   _valueCountOfArray == other._valueCountOfArray &&
+                   _ptrToValue.Equals(other._ptrToValue);
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => HashCode.Combine(_type, _valueCountOfArray, _ptrToValue);
     }
 }

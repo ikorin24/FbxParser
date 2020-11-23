@@ -13,7 +13,7 @@ namespace FbxTools.Internal
     /// <typeparam name="T">type of element</typeparam>
     [DebuggerTypeProxy(typeof(UnsafeRawArrayDebuggerTypeProxy<>))]
     [DebuggerDisplay("UnsafeRawArray<{typeof(T).Name}>[{Length}]")]
-    internal readonly unsafe struct UnsafeRawArray<T> : IDisposable where T : unmanaged
+    internal readonly unsafe struct UnsafeRawArray<T> : IDisposable, IEquatable<UnsafeRawArray<T>> where T : unmanaged
     {
         /// <summary>Get length of array</summary>
         public readonly int Length;
@@ -145,6 +145,12 @@ namespace FbxTools.Internal
 #endif
 
         }
+
+        public override bool Equals(object? obj) => obj is UnsafeRawArray<T> array && Equals(array);
+
+        public bool Equals(UnsafeRawArray<T> other) => Length == other.Length && Ptr.Equals(other.Ptr);
+
+        public override int GetHashCode() => HashCode.Combine(Length, Ptr);
     }
 
     internal class UnsafeRawArrayDebuggerTypeProxy<T> where T : unmanaged

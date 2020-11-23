@@ -5,13 +5,14 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 using FbxTools.Internal;
+using System.Collections.Generic;
 
 namespace FbxTools
 {
     /// <summary>Node structure of fbx</summary>
     [DebuggerTypeProxy(typeof(FbxNodeDebuggerTypeProxy))]
     [DebuggerDisplay("{DebuggerDisplay()}")]
-    public unsafe struct FbxNode
+    public unsafe struct FbxNode : IEquatable<FbxNode>
     {
         // I want to use 'UnsafeRawList<FbxNode>' as children,
         // but TypeLoadException happens in xunit test. (It may bug of xunit.)
@@ -103,6 +104,22 @@ namespace FbxTools
 
             _name.Dispose();
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(object? obj) => obj is FbxNode node && Equals(node);
+
+        /// <inheritdoc/>
+        public bool Equals(FbxNode other)
+        {
+            return _children.Equals(other._children) &&
+                   _childrenCapacity == other._childrenCapacity &&
+                   _childrenCount == other._childrenCount &&
+                   _properties.Equals(other._properties) &&
+                   _name.Equals(other._name);
+        }
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => HashCode.Combine(_children, _childrenCapacity, _childrenCount, _properties, _name);
     }
 
     internal class FbxNodeDebuggerTypeProxy
