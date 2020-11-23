@@ -357,6 +357,7 @@ namespace FbxTools
 
 
 
+#if NETSTANDARD2_0
     internal static class DeflateStreamExtension
     {
         public static int Read(this DeflateStream source, Span<byte> buffer)
@@ -372,4 +373,5 @@ namespace FbxTools
             }
         }
     }
+#endif
 }
