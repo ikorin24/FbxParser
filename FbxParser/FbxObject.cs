@@ -18,6 +18,7 @@ namespace FbxTools
             _nodes = nodes;
         }
 
+        /// <summary>Finalize <see cref="FbxObject"/></summary>
         ~FbxObject() => Dispose(false);
 
         /// <summary>Release all memories <see cref="FbxObject"/> has</summary>

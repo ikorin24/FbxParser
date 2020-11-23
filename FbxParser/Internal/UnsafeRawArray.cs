@@ -104,8 +104,8 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetReference() => ref Unsafe.AsRef<T>((void*)Ptr);
 
-        /// <summary>Get <see cref="Span{T}"/> of type <see cref="T"/></summary>
-        /// <returns><see cref="Span{T}"/> of type <see cref="T"/></returns>
+        /// <summary>Get <see cref="Span{T}"/></summary>
+        /// <returns><see cref="Span{T}"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan()
         {
@@ -116,10 +116,10 @@ namespace FbxTools.Internal
 #endif
         }
 
-        /// <summary>Get <see cref="Span{T}"/> of type <see cref="T"/></summary>
+        /// <summary>Get <see cref="Span{T}"/></summary>
         /// <remarks>Boundary is not checked. Be careful !!</remarks>
         /// <param name="start">start index</param>
-        /// <returns><see cref="Span{T}"/> of type <see cref="T"/></returns>
+        /// <returns><see cref="Span{T}"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start)
         {
@@ -130,11 +130,11 @@ namespace FbxTools.Internal
 #endif
         }
 
-        /// <summary>Get <see cref="Span{T}"/> of type <see cref="T"/></summary>
+        /// <summary>Get <see cref="Span{T}"/></summary>
         /// <remarks>Boundary is not checked. Be careful !!</remarks>
         /// <param name="start">start index</param>
         /// <param name="length">length of <see cref="Span{T}"/></param>
-        /// <returns><see cref="Span{T}"/> of type <see cref="T"/></returns>
+        /// <returns><see cref="Span{T}"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start, int length)
         {
