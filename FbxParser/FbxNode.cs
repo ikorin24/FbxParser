@@ -15,7 +15,6 @@ namespace FbxTools
     {
         // I want to use 'UnsafeRawList<FbxNode>' as children,
         // but TypeLoadException happens in xunit test. (It may bug of xunit.)
-        //private FbxNode* _children;
         private IntPtr _children;   // FbxNode*
         private int _childrenCapacity;
         private int _childrenCount;
@@ -29,7 +28,7 @@ namespace FbxTools
 
         internal readonly Span<FbxProperty> PropertiesInternal => _properties.AsSpan();
 
-        /// <summary>Get name of the node</summary>
+        /// <summary>Get name of the node (encoded as ASCII)</summary>
         public readonly ReadOnlySpan<byte> Name => _name.AsSpan();
 
         /// <summary>Get children nodes</summary>
@@ -40,6 +39,7 @@ namespace FbxTools
             MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode>((void*)_children), _childrenCount);
 #endif
 
+        /// <summary>Get properties of the node</summary>
         public readonly ReadOnlySpan<FbxProperty> Properties => _properties.AsSpan();
 
         internal FbxNode(RawString name, int propCount)
