@@ -59,7 +59,7 @@ namespace FbxTools
         /// <param name="thorwIfNotFound">whether throws exception or not if not found</param>
         /// <exception cref="InvalidOperationException">Children contains no matching node.</exception>
         /// <returns>a found node</returns>
-        public ref readonly FbxNode Find(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
+        public readonly ref readonly FbxNode Find(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
         {
             var children = Children;
             for(int i = 0; i < children.Length; i++) {
@@ -77,7 +77,7 @@ namespace FbxTools
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="isFound">a node is found or not.</param>
         /// <returns>a found node. (If not found, returns reference to null)</returns>
-        public ref readonly FbxNode TryFind(ReadOnlySpan<byte> nodeName, out bool isFound)
+        public readonly ref readonly FbxNode TryFind(ReadOnlySpan<byte> nodeName, out bool isFound)
         {
             var children = Children;
             for(int i = 0; i < children.Length; i++) {
@@ -94,7 +94,7 @@ namespace FbxTools
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="thorwIfNotFound">whether throws exception or not if not found</param>
         /// <returns>an index of found node</returns>
-        public int FindIndex(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
+        public readonly int FindIndex(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
         {
             var children = Children;
             for(int i = 0; i < children.Length; i++) {
@@ -112,7 +112,7 @@ namespace FbxTools
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="buffer">buffer to store result</param>
         /// <returns>found count</returns>
-        public int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer)
+        public readonly int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer)
         {
             var children = Children;
             var count = 0;
