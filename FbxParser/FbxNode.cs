@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 using FbxTools.Internal;
-using System.Collections.Generic;
 
 namespace FbxTools
 {
