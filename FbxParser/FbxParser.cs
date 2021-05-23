@@ -85,7 +85,7 @@ namespace FbxTools
             ulong propertyCount;
             ulong propertyListLen;
             byte nameLen;
-            if(version >= 7400 || version < 7500) {
+            if(version >= 7400 && version < 7500) {
                 reader.UInt32(out var eor);
                 endOfRecord = eor;
                 reader.UInt32(out var pc);
@@ -94,7 +94,7 @@ namespace FbxTools
                 propertyListLen = pll;
                 reader.Byte(out nameLen);
             }
-            else if(version >= 7500) {
+            else if(version >= 7500 && version < 7600) {
                 reader.UInt64(out endOfRecord);
                 reader.UInt64(out propertyCount);
                 reader.UInt64(out propertyListLen);
