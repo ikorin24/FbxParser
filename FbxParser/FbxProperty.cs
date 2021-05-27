@@ -9,7 +9,7 @@ using FbxTools.Internal;
 
 namespace FbxTools
 {
-    /// <summary>property of <see cref="FbxNode"/></summary>
+    /// <summary>property of <see cref="FbxNode_"/></summary>
     [DebuggerDisplay("{DebuggerDisplay()}")]
     public unsafe struct FbxProperty : IEquatable<FbxProperty>
     {

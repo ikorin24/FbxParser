@@ -4,7 +4,6 @@ using FbxTools.Internal;
 using System;
 using System.IO;
 using System.Text;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 
 namespace UnitTest
@@ -36,7 +35,7 @@ namespace UnitTest
             UnmanagedMemoryHelper.Initialize();
             using(var stream = File.OpenRead(fileName))
             using(var fbx = FbxParser.Parse(stream)) {
-                Assert.True(fbx.Nodes.Length > 0);
+                Assert.True(fbx.Nodes.Count > 0);
 
                 var positions = fbx.Find(Objects)
                                    .Find(Geometry)
@@ -72,20 +71,19 @@ namespace UnitTest
             using(var stream = File.OpenRead(fileName))
             using(var fbx = FbxParser.Parse(stream)) {
 
-                Span<int> buf = stackalloc int[fbx.Nodes.Length];
-                ref readonly var objectsNode = ref fbx.Find(Objects);
-                ref readonly var objectsNode2 = ref fbx.Nodes[fbx.FindIndex(Objects)];
-                Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(objectsNode),
-                                           ref Unsafe.AsRef(objectsNode2)));
+                Span<int> buf = stackalloc int[fbx.Nodes.Count];
+                var objectsNode = fbx.Find(Objects);
+                var objectsNode2 = fbx.Nodes[fbx.FindIndex(Objects)];
+
+                Assert.True(objectsNode.Equals(objectsNode2));
                 Assert.True(buf.Slice(0, fbx.FindIndexAll(Objects, buf))
                                             .Contains(fbx.FindIndex(Objects)));
 
 
-                Span<int> buf2 = stackalloc int[objectsNode.Children.Length];
-                ref readonly var geometryNode = ref objectsNode.Find(Geometry);
-                ref readonly var geometryNode2 = ref objectsNode.Children[objectsNode.FindIndex(Geometry)];
-                Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(geometryNode),
-                                           ref Unsafe.AsRef(geometryNode2)));
+                Span<int> buf2 = stackalloc int[objectsNode.Children.Count];
+                var geometryNode = objectsNode.Find(Geometry);
+                var geometryNode2 = objectsNode.Children[objectsNode.FindIndex(Geometry)];
+                Assert.True(geometryNode.Equals(geometryNode2));
 
                 Assert.True(buf2.Slice(0, objectsNode.FindIndexAll(Geometry, buf2))
                                                      .Contains(objectsNode.FindIndex(Geometry)));

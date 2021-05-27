@@ -52,7 +52,7 @@ namespace FbxTools
             var reader = new Reader(stream);
 
             ParseHeader(reader, out var version);
-            UnsafeRawList<FbxNode> nodes = default;
+            UnsafeRawList<FbxNode_> nodes = default;
             try {
                 while(true) {
                     if(!ParseNodeRecord(reader, version, out var node)) { break; }
@@ -79,7 +79,7 @@ namespace FbxTools
             reader.Int32(out version);
         }
 
-        private static unsafe bool ParseNodeRecord(Reader reader, int version, out FbxNode node)
+        private static unsafe bool ParseNodeRecord(Reader reader, int version, out FbxNode_ node)
         {
             ulong endOfRecord;
             ulong propertyCount;
@@ -111,7 +111,7 @@ namespace FbxTools
 
             node = default;
             try {
-                node = new FbxNode(new RawString(nameLen), (int)propertyCount);
+                node = new FbxNode_(new RawStringMem(nameLen), (int)propertyCount);
                 var name = node.NameInternal;
                 var properties = node.PropertiesInternal;
                 reader.Read(name);
@@ -181,9 +181,9 @@ namespace FbxTools
                 }
                 case STRING_PROPERTY: {
                     reader.Int32(out var len);
-                    RawString str = default;
+                    RawStringMem str = default;
                     try {
-                        str = new RawString(len);
+                        str = new RawStringMem(len);
                         reader.Read(str.AsSpan());
                         SanitizeString(str.AsSpan());
                         property.SetString((byte*)str.Ptr, str.ByteLength);

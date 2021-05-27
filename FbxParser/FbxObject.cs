@@ -8,13 +8,13 @@ namespace FbxTools
     /// <summary>Fbx object</summary>
     public sealed unsafe class FbxObject : IDisposable
     {
-        private UnsafeRawList<FbxNode> _nodes;
+        private UnsafeRawList<FbxNode_> _nodes;
         private bool IsDisposed => _nodes.Ptr == IntPtr.Zero;
 
-        /// <summary>Get <see cref="FbxNode"/>s of this <see cref="FbxObject"/></summary>
-        public ReadOnlySpan<FbxNode> Nodes => _nodes.AsSpan();
+        /// <summary>Get root <see cref="FbxNode"/>s of this <see cref="FbxObject"/></summary>
+        public FbxNodeList Nodes => new FbxNodeList((FbxNode_*)_nodes.Ptr, _nodes.Count);
 
-        internal FbxObject(in UnsafeRawList<FbxNode> nodes)
+        internal FbxObject(in UnsafeRawList<FbxNode_> nodes)
         {
             _nodes = nodes;
         }
@@ -24,51 +24,43 @@ namespace FbxTools
 
         /// <summary>Find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
-        /// <param name="thorwIfNotFound">whether throws exception or not if not found</param>
         /// <exception cref="InvalidOperationException">Children contains no matching node.</exception>
         /// <returns>a found node</returns>
-        public ref readonly FbxNode Find(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
+        public FbxNode Find(ReadOnlySpan<byte> nodeName)
         {
-            for(int i = 0; i < _nodes.Count; i++) {
-                if(_nodes[i].Name.SequenceEqual(nodeName)) {
-                    return ref _nodes[i];
-                }
+            if(TryFind(nodeName, out var node) == false) {
+                Throw();
+                static void Throw() => throw new InvalidOperationException("Children contains no matching node.");
             }
-            if(thorwIfNotFound) {
-                throw new InvalidOperationException("Children contains no matching node.");
-            }
-            return ref Unsafe.AsRef<FbxNode>(null);
+            return node;
         }
 
         /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
-        /// <param name="isFound">a node is found or not.</param>
-        /// <returns>a found node. (If not found, returns reference to null)</returns>
-        public ref readonly FbxNode TryFind(ReadOnlySpan<byte> nodeName, out bool isFound)
+        /// <param name="node">a found node</param>
+        /// <returns>found or not</returns>
+        public bool TryFind(ReadOnlySpan<byte> nodeName, out FbxNode node)
         {
             for(int i = 0; i < _nodes.Count; i++) {
                 if(_nodes[i].Name.SequenceEqual(nodeName)) {
-                    isFound = true;
-                    return ref _nodes[i];
+                    var ptr = (FbxNode_*)Unsafe.AsPointer(ref _nodes[i]);
+                    node = new FbxNode(ptr);
+                    return true;
                 }
             }
-            isFound = false;
-            return ref Unsafe.AsRef<FbxNode>(null);
+            node = FbxNode.Null;
+            return false;
         }
 
         /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
-        /// <param name="thorwIfNotFound">whether throws exception or not if not found</param>
         /// <returns>an index of found node</returns>
-        public int FindIndex(ReadOnlySpan<byte> nodeName, bool thorwIfNotFound = true)
+        public int FindIndex(ReadOnlySpan<byte> nodeName)
         {
             for(int i = 0; i < _nodes.Count; i++) {
                 if(_nodes[i].Name.SequenceEqual(nodeName)) {
                     return i;
                 }
-            }
-            if(thorwIfNotFound) {
-                throw new InvalidOperationException("Children contains no matching node.");
             }
             return -1;
         }
