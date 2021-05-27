@@ -8,7 +8,7 @@ using FbxTools.Internal;
 namespace FbxTools
 {
     /// <summary>Node structure of fbx</summary>
-    [DebuggerDisplay("{DebuggerDisplay()}")]
+    [DebuggerDisplay("{DebuggerDisplay(),nq}")]
     public readonly unsafe struct FbxNode : IEquatable<FbxNode>
     {
         private readonly IntPtr _ptr;
@@ -64,7 +64,7 @@ namespace FbxTools
 
     /// <summary>Node internal structure of fbx</summary>
     [DebuggerTypeProxy(typeof(FbxNode_DebuggerTypeProxy))]
-    [DebuggerDisplay("{DebuggerDisplay()}")]
+    [DebuggerDisplay("{DebuggerDisplay(),nq}")]
     internal unsafe struct FbxNode_ : IEquatable<FbxNode_>
     {
         // I want to use 'UnsafeRawList<FbxNode_>' as children,
@@ -76,7 +76,7 @@ namespace FbxTools
         private UnsafeRawArray<FbxProperty> _properties;
         private RawStringMem _name;
 
-        internal string DebuggerDisplay() => $"{_name.ToString()}   (Properties={_properties.Length} Children={_childrenCount})";
+        internal string DebuggerDisplay() => $"\"{_name.ToString()}\" (Properties={_properties.Length} Children={_childrenCount})";
 
         internal readonly Span<byte> NameInternal => _name.AsSpan();
 
