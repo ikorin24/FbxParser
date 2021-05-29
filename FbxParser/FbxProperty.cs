@@ -10,7 +10,7 @@ using FbxTools.Internal;
 namespace FbxTools
 {
     /// <summary>property of <see cref="FbxNode_"/></summary>
-    [DebuggerDisplay("{DebuggerDisplay()}")]
+    [DebuggerDisplay("{DebuggerDisplay(),nq}")]
     public unsafe struct FbxProperty : IEquatable<FbxProperty>
     {
         private FbxPropertyType _type;
@@ -20,24 +20,24 @@ namespace FbxTools
         private readonly string DebuggerDisplay()
         {
             if(_ptrToValue == IntPtr.Zero) {
-                return "";
+                return "<invalid>";
             }
             return _type switch
             {
-                FbxPropertyType.Int32 => $"int: '{AsInt32()}'",
-                FbxPropertyType.Int16 => $"short: '{AsInt16()}'",
-                FbxPropertyType.Int64 => $"long: '{AsInt64()}'",
-                FbxPropertyType.Float => $"float: '{AsFloat()}'",
-                FbxPropertyType.Double => $"double: '{AsDouble()}'",
-                FbxPropertyType.Bool => $"bool: '{AsBool()}'",
-                FbxPropertyType.String => $"string: '{Encoding.ASCII.GetString((byte*)_ptrToValue, _valueCountOfArray)}'",
+                FbxPropertyType.Int32 => $"int: {AsInt32()}",
+                FbxPropertyType.Int16 => $"short: {AsInt16()}",
+                FbxPropertyType.Int64 => $"long: {AsInt64()}",
+                FbxPropertyType.Float => $"float: {AsFloat()}",
+                FbxPropertyType.Double => $"double: {AsDouble()}",
+                FbxPropertyType.Bool => $"bool: {AsBool()}",
+                FbxPropertyType.String => $"string: \"{Encoding.ASCII.GetString((byte*)_ptrToValue, _valueCountOfArray)}\"",
                 FbxPropertyType.Int32Array => $"int[{_valueCountOfArray}]",
                 FbxPropertyType.Int64Array => $"long[{_valueCountOfArray}]",
                 FbxPropertyType.FloatArray => $"float[{_valueCountOfArray}]",
                 FbxPropertyType.DoubleArray => $"double[{_valueCountOfArray}]",
                 FbxPropertyType.BoolArray => $"bool[{_valueCountOfArray}]",
                 FbxPropertyType.ByteArray => $"byte[{_valueCountOfArray}]",
-                _ => "",
+                _ => "<invalid>",
             };
         }
 
@@ -190,14 +190,44 @@ namespace FbxTools
         #endregion
 
         #region method of As XXX
+        /// <summary>Get property value if its type is <see cref="short"/></summary>
+        /// <param name="value">property value of type <see cref="short"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsInt16(out short value)
+        {
+            if(_type == FbxPropertyType.Int16) {
+                value = *(short*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
         /// <summary>Get property value of type <see cref="short"/></summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Int16"/></exception>
         /// <returns>property value of type <see cref="short"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly short AsInt16()
         {
-            if(_type != FbxPropertyType.Int16) { ThrowInvalidCast(_type); }
-            return *(short*)_ptrToValue;
+            if(TryAsInt16(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value if its type is <see cref="int"/></summary>
+        /// <param name="value">property value of type <see cref="int"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsInt32(out int value)
+        {
+            if(_type == FbxPropertyType.Int32) {
+                value = *(int*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>Get property value of type <see cref="int"/></summary>
@@ -206,8 +236,24 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly int AsInt32()
         {
-            if(_type != FbxPropertyType.Int32) { ThrowInvalidCast(_type); }
-            return *(int*)_ptrToValue;
+            if(TryAsInt32(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value if its type is <see cref="long"/></summary>
+        /// <param name="value">property value of type <see cref="long"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsInt64(out long value)
+        {
+            if(_type == FbxPropertyType.Int64) {
+                value = *(long*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>Get property value of type <see cref="long"/></summary>
@@ -216,22 +262,50 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly long AsInt64()
         {
-            if(_type != FbxPropertyType.Int64) { ThrowInvalidCast(_type); }
-            return *(long*)_ptrToValue;
+            if(TryAsInt64(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value if its type is <see cref="string"/> like</summary>
+        /// <param name="value">property value of type like <see cref="string"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsString(out RawString value)
+        {
+            if(_type == FbxPropertyType.String) {
+                value = new RawString(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawString.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="string"/></summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.String"/></exception>
         /// <returns>property value of type like <see cref="string"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<byte> AsString()
+        public readonly RawString AsString()
         {
-            if(_type != FbxPropertyType.String) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<byte>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsString(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value if its type is <see cref="bool"/></summary>
+        /// <param name="value">property value of type <see cref="bool"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsBool(out bool value)
+        {
+            if(_type == FbxPropertyType.Bool) {
+                value = *(bool*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>Get property value of type <see cref="bool"/></summary>
@@ -240,8 +314,24 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool AsBool()
         {
-            if(_type != FbxPropertyType.Bool) { ThrowInvalidCast(_type); }
-            return *(bool*)_ptrToValue;
+            if(TryAsBool(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value if its type is <see cref="float"/></summary>
+        /// <param name="value">property value of type <see cref="float"/></param>
+        /// <returns>success or not</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsFloat(out float value)
+        {
+            if(_type == FbxPropertyType.Float) {
+                value = *(float*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>Get property value of type <see cref="float"/></summary>
@@ -250,8 +340,24 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float AsFloat()
         {
-            if(_type != FbxPropertyType.Float) { ThrowInvalidCast(_type); }
-            return *(float*)_ptrToValue;
+            if(TryAsFloat(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="double"/></summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Double"/></exception>
+        /// <returns>property value of type <see cref="double"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsDouble(out double value)
+        {
+            if(_type == FbxPropertyType.Double) {
+                value = *(double*)_ptrToValue;
+                return true;
+            }
+            value = default;
+            return false;
         }
 
         /// <summary>Get property value of type <see cref="double"/></summary>
@@ -260,92 +366,166 @@ namespace FbxTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly double AsDouble()
         {
-            if(_type != FbxPropertyType.Double) { ThrowInvalidCast(_type); }
-            return *(double*)_ptrToValue;
+            if(TryAsDouble(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="bool"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.BoolArray"/></exception>
+        /// <returns>property value of type <see cref="bool"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsBoolArray(out RawArray<bool> value)
+        {
+            if(_type == FbxPropertyType.BoolArray) {
+                value = new RawArray<bool>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<bool>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="bool"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.BoolArray"/></exception>
         /// <returns>property value of type like <see cref="bool"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<bool> AsBoolArray()
+        public readonly RawArray<bool> AsBoolArray()
         {
-            if(_type != FbxPropertyType.BoolArray) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<bool>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<bool>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsBoolArray(out var value) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return value;
+        }
+
+        /// <summary>Get property value of type <see cref="int"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Int32Array"/></exception>
+        /// <returns>property value of type <see cref="int"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsInt32Array(out RawArray<int> value)
+        {
+            if(_type == FbxPropertyType.Int32Array) {
+                value = new RawArray<int>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<int>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="int"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Int32Array"/></exception>
         /// <returns>property value of type like <see cref="int"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<int> AsInt32Array()
+        public readonly RawArray<int> AsInt32Array()
         {
-            if(_type != FbxPropertyType.Int32Array) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<int>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<int>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsInt32Array(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="long"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Int64Array"/></exception>
+        /// <returns>property value of type <see cref="long"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsInt64Array(out RawArray<long> value)
+        {
+            if(_type == FbxPropertyType.Int64Array) {
+                value = new RawArray<long>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<long>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="long"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.Int64Array"/></exception>
         /// <returns>property value of type like <see cref="long"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<long> AsInt64Array()
+        public readonly RawArray<long> AsInt64Array()
         {
-            if(_type != FbxPropertyType.Int64Array) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<long>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<long>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsInt64Array(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="float"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.FloatArray"/></exception>
+        /// <returns>property value of type <see cref="float"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsFloatArray(out RawArray<float> value)
+        {
+            if(_type == FbxPropertyType.FloatArray) {
+                value = new RawArray<float>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<float>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="float"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.FloatArray"/></exception>
         /// <returns>property value of type like <see cref="float"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<float> AsFloatArray()
+        public readonly RawArray<float> AsFloatArray()
         {
-            if(_type != FbxPropertyType.FloatArray) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<float>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<float>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsFloatArray(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="double"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.DoubleArray"/></exception>
+        /// <returns>property value of type <see cref="double"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsDoubleArray(out RawArray<double> value)
+        {
+            if(_type == FbxPropertyType.DoubleArray) {
+                value = new RawArray<double>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<double>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="double"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.DoubleArray"/></exception>
         /// <returns>property value of type like <see cref="double"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<double> AsDoubleArray()
+        public readonly RawArray<double> AsDoubleArray()
         {
-            if(_type != FbxPropertyType.DoubleArray) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<double>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<double>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsDoubleArray(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
+        }
+
+        /// <summary>Get property value of type <see cref="byte"/> array</summary>
+        /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.ByteArray"/></exception>
+        /// <returns>property value of type <see cref="byte"/> array</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool TryAsByteArray(out RawArray<byte> value)
+        {
+            if(_type == FbxPropertyType.ByteArray) {
+                value = new RawArray<byte>(_ptrToValue, _valueCountOfArray);
+                return true;
+            }
+            value = RawArray<byte>.Empty;
+            return false;
         }
 
         /// <summary>Get property value of type like <see cref="byte"/> array</summary>
         /// <exception cref="InvalidCastException"><see cref="Type"/> is not <see cref="FbxPropertyType.ByteArray"/></exception>
         /// <returns>property value of type like <see cref="byte"/> array</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ReadOnlySpan<byte> AsByteArray()
+        public readonly RawArray<byte> AsByteArray()
         {
-            if(_type != FbxPropertyType.ByteArray) { ThrowInvalidCast(_type); }
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<byte>((void*)_ptrToValue, _valueCountOfArray);
-#else
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>((void*)_ptrToValue), _valueCountOfArray);
-#endif
+            if(TryAsByteArray(out var result) == false) {
+                ThrowInvalidCast(_type);
+            }
+            return result;
         }
         #endregion
 
