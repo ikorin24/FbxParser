@@ -54,10 +54,13 @@ namespace FbxTools
         /// <returns>found count</returns>
         public readonly int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer) => ((FbxNode_*)_ptr)->FindIndexAll(nodeName, buffer);
 
+        /// <inheritdoc/>
         public override bool Equals(object? obj) => obj is FbxNode node && Equals(node);
 
+        /// <inheritdoc/>
         public bool Equals(FbxNode other) => _ptr.Equals(other._ptr);
 
+        /// <inheritdoc/>
         public override int GetHashCode() => _ptr.GetHashCode();
     }
 

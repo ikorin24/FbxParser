@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace FbxTools
 {
+    /// <summary>Provides list of <see cref="FbxNode"/></summary>
     [DebuggerTypeProxy(typeof(FbxNodeListDebuggerTypeProxy))]
     [DebuggerDisplay("FbxNode[{_count}]")]
     public unsafe readonly struct FbxNodeList : IEnumerable<FbxNode>, IEquatable<FbxNodeList>, ICollection<FbxNode>
@@ -13,10 +14,14 @@ namespace FbxTools
         private readonly FbxNode_* _node;
         private readonly int _count;
 
+        /// <summary>Get count of the items</summary>
         public int Count => _count;
 
         bool ICollection<FbxNode>.IsReadOnly => true;
 
+        /// <summary>Get <see cref="FbxNode"/> of the specified index</summary>
+        /// <param name="index">index of the item</param>
+        /// <returns>fbx node</returns>
         public FbxNode this[int index]
         {
             get
