@@ -1,8 +1,16 @@
 ﻿#nullable enable
+
+#if !NETSTANDARD2_0
+#define CREATE_SPAN_API
+#endif
+
+#if CREATE_SPAN_API
+using System.Runtime.InteropServices;
+#endif
+
 using System;
 using System.Text;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using FbxTools.Internal;
 using System.ComponentModel;
@@ -18,6 +26,9 @@ namespace FbxTools
 
         /// <summary>Get length of string</summary>
         public int Length => _byteLength;
+
+        /// <summary>Get whether the string is empty</summary>
+        public bool IsEmpty => _byteLength == 0;
 
         /// <summary>Get empty of <see cref="RawString"/></summary>
         public static RawString Empty => default;
@@ -61,14 +72,86 @@ namespace FbxTools
         /// <returns><see langword="true"/> if equal, otherwise <see langword="false"/></returns>
         public bool SequenceEqual(ReadOnlySpan<byte> other) => AsSpan().SequenceEqual(other);
 
+        /// <summary>Get slice starting at the specifide index</summary>
+        /// <param name="start">start index</param>
+        /// <returns>sliced string</returns>
+        public RawString Slice(int start)
+        {
+            if((uint)start > (uint)_byteLength) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(start));
+            }
+            return new RawString(IntPtr.Add(_headPointer, start), _byteLength - start);
+        }
+
+        /// <summary>Get slice of the specified length starting at the specifide index</summary>
+        /// <param name="start">start index</param>
+        /// <param name="length">length of slice</param>
+        /// <returns>sliced string</returns>
+        public RawString Slice(int start, int length)
+        {
+            if((uint)start > (uint)_byteLength) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(start));
+            }
+            if((uint)length > (uint)(_byteLength - start)) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            return new RawString(IntPtr.Add(_headPointer, start), length);
+        }
+
         /// <summary>Get ASCII bytes span</summary>
-        /// <returns>ASCII byte span</returns>
+        /// <returns>ASCII bytes span</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<byte> AsSpan()
         {
-#if NETSTANDARD2_0
-            return new ReadOnlySpan<byte>((void*)_headPointer, _byteLength);
-#else
+#if CREATE_SPAN_API
             return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>((void*)_headPointer), _byteLength);
+#else
+            return new ReadOnlySpan<byte>((void*)_headPointer, _byteLength);
+#endif
+        }
+
+        /// <summary>Get ASCII bytes span starting at the specified index</summary>
+        /// <param name="start">start index</param>
+        /// <returns>ASCII bytes span</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<byte> AsSpan(int start)
+        {
+            if((uint)start > (uint)_byteLength) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(start));
+            }
+
+#if CREATE_SPAN_API
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>(((byte*)_headPointer) + start), _byteLength - start);
+#else
+            return new ReadOnlySpan<byte>(((byte*)_headPointer) + start, _byteLength - start);
+#endif
+        }
+
+        /// <summary>Get ASCII bytes span of the specified length starting at the specified index</summary>
+        /// <param name="start">start index</param>
+        /// <param name="length">length of span</param>
+        /// <returns>ASCII bytes span</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<byte> AsSpan(int start, int length)
+        {
+            if((uint)start > (uint)_byteLength) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(start));
+            }
+            if((uint)length > (uint)(_byteLength - start)) {
+                ThrowOutOfRange();
+                static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+#if CREATE_SPAN_API
+            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<byte>(((byte*)_headPointer) + start), length);
+#else
+            return new ReadOnlySpan<byte>(((byte*)_headPointer) + start, length);
 #endif
         }
 
