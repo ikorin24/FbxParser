@@ -37,22 +37,83 @@ namespace FbxTools
         /// <returns>a found node</returns>
         public readonly FbxNode Find(ReadOnlySpan<byte> nodeName) => ((FbxNode_*)_ptr)->Find(nodeName);
 
+        /// <summary>Find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <exception cref="InvalidOperationException">Children contains no matching node.</exception>
+        /// <returns>a found node</returns>
+        public readonly FbxNode Find(RawString nodeName) => Find(nodeName.AsSpan());
+
+        /// <summary>Find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <exception cref="InvalidOperationException">Children contains no matching node.</exception>
+        /// <returns>a found node</returns>
+        public readonly FbxNode Find(string nodeName) => ((FbxNode_*)_ptr)->Find(nodeName);
+
         /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="node">a found node</param>
         /// <returns>found or not</returns>
         public readonly bool TryFind(ReadOnlySpan<byte> nodeName, out FbxNode node) => ((FbxNode_*)_ptr)->TryFind(nodeName, out node);
 
+        /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <param name="node">a found node</param>
+        /// <returns>found or not</returns>
+        public readonly bool TryFind(RawString nodeName, out FbxNode node) => TryFind(nodeName.AsSpan(), out node);
+
+        /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <param name="node">a found node</param>
+        /// <returns>found or not</returns>
+        public readonly bool TryFind(string nodeName, out FbxNode node) => TryFind(nodeName, out node);
+
         /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <returns>an index of found node</returns>
         public readonly int FindIndex(ReadOnlySpan<byte> nodeName) => ((FbxNode_*)_ptr)->FindIndex(nodeName);
+
+        /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>an index of found node</returns>
+        public readonly int FindIndex(RawString nodeName) => FindIndex(nodeName.AsSpan());
+
+        /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>an index of found node</returns>
+        public readonly int FindIndex(string nodeName) => ((FbxNode_*)_ptr)->FindIndex(nodeName);
 
         /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="buffer">buffer to store result</param>
         /// <returns>found count</returns>
         public readonly int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer) => ((FbxNode_*)_ptr)->FindIndexAll(nodeName, buffer);
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <param name="buffer">buffer to store result</param>
+        /// <returns>found count</returns>
+        public readonly int FindIndexAll(RawString nodeName, Span<int> buffer) => FindIndexAll(nodeName.AsSpan(), buffer);
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <param name="buffer">buffer to store result</param>
+        /// <returns>found count</returns>
+        public readonly int FindIndexAll(string nodeName, Span<int> buffer) => ((FbxNode_*)_ptr)->FindIndexAll(nodeName, buffer);
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>index list</returns>
+        public readonly int[] FindIndexAll(ReadOnlySpan<byte> nodeName) => ((FbxNode_*)_ptr)->FindIndexAll(nodeName);
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>index list</returns>
+        public readonly int[] FindIndexAll(string nodeName) => ((FbxNode_*)_ptr)->FindIndexAll(nodeName);
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>index list</returns>
+        public readonly int[] FindIndexAll(RawString nodeName) => FindIndexAll(nodeName.AsSpan());
 
         /// <inheritdoc/>
         public override bool Equals(object? obj) => obj is FbxNode node && Equals(node);
@@ -126,6 +187,14 @@ namespace FbxTools
             return node;
         }
 
+        public readonly FbxNode Find(string nodeName)
+        {
+            return ReEncodingOperation.Func(nodeName, this, &FindNode, &Fallback);
+
+            static FbxNode FindNode(ReadOnlySpan<byte> ascii, FbxNode_ self) => self.Find(ascii);
+            static FbxNode Fallback() => throw new InvalidOperationException("Children contains no matching node.");
+        }
+
         /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="node">a found node</param>
@@ -143,6 +212,20 @@ namespace FbxTools
             return false;
         }
 
+        public readonly bool TryFind(string nodeName, out FbxNode node)
+        {
+            bool isFound;
+            (node, isFound) = ReEncodingOperation.Func(nodeName, this, &TryFindNode, &Fallback);
+            return isFound;
+
+            static (FbxNode result, bool isFound) TryFindNode(ReadOnlySpan<byte> ascii, FbxNode_ self)
+            {
+                var isFound = self.TryFind(ascii, out var result);
+                return (result, isFound);
+            }
+            static (FbxNode result, bool isFound) Fallback() => (FbxNode.Null, false);
+        }
+
         /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <returns>an index of found node</returns>
@@ -155,6 +238,14 @@ namespace FbxTools
                 }
             }
             return -1;
+        }
+
+        public readonly int FindIndex(string nodeName)
+        {
+            return ReEncodingOperation.Func(nodeName, this, &FindIndexLocal, &Fallback);
+
+            static int FindIndexLocal(ReadOnlySpan<byte> ascii, FbxNode_ self) => self.FindIndex(ascii);
+            static int Fallback() => -1;
         }
 
         /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
@@ -171,6 +262,58 @@ namespace FbxTools
                 }
             }
             return count;
+        }
+
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <param name="buffer">buffer to store result</param>
+        /// <returns>found count</returns>
+        public readonly int FindIndexAll(string nodeName, Span<int> buffer)
+        {
+            fixed(int* b = buffer) {
+                var state = (new IntPtr(b), buffer.Length, this);
+                return ReEncodingOperation.Func(nodeName, state, &FindIndexAllLocal, &Fallback);
+            }
+
+            static int FindIndexAllLocal(ReadOnlySpan<byte> ascii, (IntPtr b, int len, FbxNode_ self) state)
+            {
+                var buffer = new Span<int>((int*)state.b, state.len);
+                return state.self.FindIndexAll(ascii, buffer);
+            }
+            static int Fallback() => 0;
+        }
+
+#if NET5_0_OR_GREATER
+        [SkipLocalsInit]
+#endif
+        public readonly int[] FindIndexAll(ReadOnlySpan<byte> nodeName)
+        {
+            var children = (FbxNode_*)_children;
+            if(_childrenCount <= 128) {
+                Span<int> buf = stackalloc int[_childrenCount];
+                var count = FindIndexAll(nodeName, buf);
+                return buf.Slice(0, count).ToArray();
+            }
+            else {
+                int* p = null;
+                try {
+                    p = (int*)Marshal.AllocHGlobal(sizeof(int) * _childrenCount);
+                    var buf = new Span<int>(p, _childrenCount);
+                    var count = FindIndexAll(nodeName, buf);
+                    return buf.Slice(0, count).ToArray();
+                }
+                finally {
+                    Marshal.FreeHGlobal(new IntPtr(p));
+                }
+            }
+        }
+
+        public readonly int[] FindIndexAll(string nodeName)
+        {
+            return ReEncodingOperation.Func(nodeName, this, &FindIndexAllLocal, &Fallback);
+
+            static int[] FindIndexAllLocal(ReadOnlySpan<byte> ascii, FbxNode_ self) => self.FindIndexAll(ascii);
+            static int[] Fallback() => Array.Empty<int>();
         }
 
         internal void AddChild(in FbxNode_ node)

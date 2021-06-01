@@ -190,39 +190,10 @@ namespace FbxTools
 #endif
         public static bool operator ==(RawString left, string right)
         {
-            if(string.IsNullOrEmpty(right)) {
-                return left.IsEmpty;
-            }
-            var byteCount = Encoding.ASCII.GetByteCount(right);
-            if(byteCount != right.Length) {
-                // The string contains non-ASCII charactors.
-                // Return false because RawString always represents ASCII.
-                return false;
-            }
-            if(byteCount != left.Length) {
-                return false;
-            }
+            return ReEncodingOperation.Func(right, left, &Compere, &Fallback);
 
-            if(byteCount <= 128) {
-                var buf = stackalloc byte[byteCount];
-                fixed(char* c = right) {
-                    Encoding.ASCII.GetBytes(c, right.Length, buf, byteCount);
-                }
-                return new ReadOnlySpan<byte>(buf, byteCount).SequenceEqual(left.AsSpan());
-            }
-            else {
-                byte* buf = null;
-                try {
-                    buf = (byte*)Marshal.AllocHGlobal(byteCount);
-                    fixed(char* c = right) {
-                        Encoding.ASCII.GetBytes(c, right.Length, buf, byteCount);
-                    }
-                    return new ReadOnlySpan<byte>(buf, byteCount).SequenceEqual(left.AsSpan());
-                }
-                finally {
-                    Marshal.FreeHGlobal(new IntPtr(buf));
-                }
-            }
+            static bool Compere(ReadOnlySpan<byte> ascii, RawString s) => ascii.SequenceEqual(s.AsSpan());
+            static bool Fallback() => false;
         }
 
         /// <summary>Indicates whether <paramref name="left"/> and <paramref name="right"/> are not equal.</summary>
