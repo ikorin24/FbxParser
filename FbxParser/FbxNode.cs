@@ -195,21 +195,25 @@ namespace FbxTools
             static FbxNode Fallback() => throw new InvalidOperationException("Children contains no matching node.");
         }
 
+        public static bool TryFind(FbxNode_* targets, int targetsCount, ReadOnlySpan<byte> nodeName, out FbxNode node)
+        {
+            for(int i = 0; i < targetsCount; i++) {
+                if(targets[i].Name.SequenceEqual(nodeName)) {
+                    node = new FbxNode(&targets[i]);
+                    return true;
+                }
+            }
+            node = FbxNode.Null;
+            return false;
+        }
+
         /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="node">a found node</param>
         /// <returns>found or not</returns>
         public readonly bool TryFind(ReadOnlySpan<byte> nodeName, out FbxNode node)
         {
-            var children = (FbxNode_*)_children;
-            for(int i = 0; i < _childrenCount; i++) {
-                if(children[i].Name.SequenceEqual(nodeName)) {
-                    node = new FbxNode(&children[i]);
-                    return true;
-                }
-            }
-            node = FbxNode.Null;
-            return false;
+            return TryFind((FbxNode_*)_children, _childrenCount, nodeName, out node);
         }
 
         public readonly bool TryFind(string nodeName, out FbxNode node)
@@ -226,18 +230,22 @@ namespace FbxTools
             static (FbxNode result, bool isFound) Fallback() => (FbxNode.Null, false);
         }
 
+        public static int FindIndex(FbxNode_* targets, int targetsCount, ReadOnlySpan<byte> nodeName)
+        {
+            for(int i = 0; i < targetsCount; i++) {
+                if(targets[i].Name.SequenceEqual(nodeName)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <returns>an index of found node</returns>
         public readonly int FindIndex(ReadOnlySpan<byte> nodeName)
         {
-            var children = (FbxNode_*)_children;
-            for(int i = 0; i < _childrenCount; i++) {
-                if(children[i].Name.SequenceEqual(nodeName)) {
-                    return i;
-                }
-            }
-            return -1;
+            return FindIndex((FbxNode_*)_children, _childrenCount, nodeName);
         }
 
         public readonly int FindIndex(string nodeName)
@@ -248,20 +256,24 @@ namespace FbxTools
             static int Fallback() => -1;
         }
 
+        public static int FindIndexAll(FbxNode_* targets, int targetsCount, ReadOnlySpan<byte> nodeName, Span<int> buffer)
+        {
+            var count = 0;
+            for(int i = 0; i < targetsCount; i++) {
+                if(targets[i].Name.SequenceEqual(nodeName)) {
+                    buffer[count++] = i;
+                }
+            }
+            return count;
+        }
+
         /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="buffer">buffer to store result</param>
         /// <returns>found count</returns>
         public readonly int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer)
         {
-            var children = (FbxNode_*)_children;
-            var count = 0;
-            for(int i = 0; i < _childrenCount; i++) {
-                if(children[i].Name.SequenceEqual(nodeName)) {
-                    buffer[count++] = i;
-                }
-            }
-            return count;
+            return FindIndexAll((FbxNode_*)_children, _childrenCount, nodeName, buffer);
         }
 
         /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>

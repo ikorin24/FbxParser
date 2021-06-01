@@ -41,15 +41,7 @@ namespace FbxTools
         /// <returns>found or not</returns>
         public bool TryFind(ReadOnlySpan<byte> nodeName, out FbxNode node)
         {
-            for(int i = 0; i < _nodes.Count; i++) {
-                if(_nodes[i].Name.SequenceEqual(nodeName)) {
-                    var ptr = (FbxNode_*)Unsafe.AsPointer(ref _nodes[i]);
-                    node = new FbxNode(ptr);
-                    return true;
-                }
-            }
-            node = FbxNode.Null;
-            return false;
+            return FbxNode_.TryFind((FbxNode_*)_nodes.Ptr, _nodes.Count, nodeName, out node);
         }
 
         /// <summary>Find an index of node of specified name. Returns an index of first found. (This method is not recursive, just find from children)</summary>
@@ -57,12 +49,7 @@ namespace FbxTools
         /// <returns>an index of found node</returns>
         public int FindIndex(ReadOnlySpan<byte> nodeName)
         {
-            for(int i = 0; i < _nodes.Count; i++) {
-                if(_nodes[i].Name.SequenceEqual(nodeName)) {
-                    return i;
-                }
-            }
-            return -1;
+            return FbxNode_.FindIndex((FbxNode_*)_nodes.Ptr, _nodes.Count, nodeName);
         }
 
         /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
@@ -71,13 +58,7 @@ namespace FbxTools
         /// <returns>found count</returns>
         public int FindIndexAll(ReadOnlySpan<byte> nodeName, Span<int> buffer)
         {
-            var count = 0;
-            for(int i = 0; i < _nodes.Count; i++) {
-                if(_nodes[i].Name.SequenceEqual(nodeName)) {
-                    buffer[count++] = i;
-                }
-            }
-            return count;
+            return FbxNode_.FindIndexAll((FbxNode_*)_nodes.Ptr, _nodes.Count, nodeName, buffer);
         }
 
         /// <summary>Release all memories <see cref="FbxObject"/> has</summary>
