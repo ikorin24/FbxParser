@@ -20,7 +20,7 @@ namespace FbxTools
         private readonly string DebuggerDisplay()
         {
             if(_ptrToValue == IntPtr.Zero) {
-                return "<invalid>";
+                return "";
             }
             return _type switch
             {
