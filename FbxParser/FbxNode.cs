@@ -298,26 +298,30 @@ namespace FbxTools
 #if NET5_0_OR_GREATER
         [SkipLocalsInit]
 #endif
-        public readonly int[] FindIndexAll(ReadOnlySpan<byte> nodeName)
+        public static int[] FindIndexAll(FbxNode_* targets, int targetsCount, ReadOnlySpan<byte> nodeName)
         {
-            var children = (FbxNode_*)_children;
-            if(_childrenCount <= 128) {
-                Span<int> buf = stackalloc int[_childrenCount];
-                var count = FindIndexAll(nodeName, buf);
+            if(targetsCount <= 128) {
+                Span<int> buf = stackalloc int[targetsCount];
+                var count = FindIndexAll(targets, targetsCount, nodeName, buf);
                 return buf.Slice(0, count).ToArray();
             }
             else {
                 int* p = null;
                 try {
-                    p = (int*)Marshal.AllocHGlobal(sizeof(int) * _childrenCount);
-                    var buf = new Span<int>(p, _childrenCount);
-                    var count = FindIndexAll(nodeName, buf);
+                    p = (int*)Marshal.AllocHGlobal(sizeof(int) * targetsCount);
+                    var buf = new Span<int>(p, targetsCount);
+                    var count = FindIndexAll(targets, targetsCount, nodeName, buf);
                     return buf.Slice(0, count).ToArray();
                 }
                 finally {
                     Marshal.FreeHGlobal(new IntPtr(p));
                 }
             }
+        }
+
+        public readonly int[] FindIndexAll(ReadOnlySpan<byte> nodeName)
+        {
+            return FindIndexAll((FbxNode_*)_children, _childrenCount, nodeName);
         }
 
         public readonly int[] FindIndexAll(string nodeName)

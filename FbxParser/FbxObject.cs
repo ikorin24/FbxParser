@@ -61,6 +61,11 @@ namespace FbxTools
             return FbxNode_.FindIndexAll((FbxNode_*)_nodes.Ptr, _nodes.Count, nodeName, buffer);
         }
 
+        /// <summary>Find index list of specified name. (This method is not recursive, just find from children)</summary>
+        /// <param name="nodeName">node name as ASCII</param>
+        /// <returns>index list</returns>
+        public int[] FindIndexAll(ReadOnlySpan<byte> nodeName) => FbxNode_.FindIndexAll((FbxNode_*)_nodes.Ptr, _nodes.Count, nodeName);
+
         /// <summary>Release all memories <see cref="FbxObject"/> has</summary>
         public void Dispose()
         {
