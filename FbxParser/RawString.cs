@@ -181,6 +181,68 @@ namespace FbxTools
         /// <returns><see langword="true"/> if not equal, otherwise <see langword="false"/></returns>
         public static bool operator !=(RawString left, RawString right) => !(left == right);
 
+        /// <summary>Indicates whether <paramref name="left"/> and <paramref name="right"/> and equal.</summary>
+        /// <param name="left">the left object to compere</param>
+        /// <param name="right">the right object to compere</param>
+        /// <returns><see langword="true"/> if equal, otherwise <see langword="false"/></returns>
+#if NET5_0_OR_GREATER
+        [SkipLocalsInit]
+#endif
+        public static bool operator ==(RawString left, string right)
+        {
+            if(string.IsNullOrEmpty(right)) {
+                return left.IsEmpty;
+            }
+            var byteCount = Encoding.ASCII.GetByteCount(right);
+            if(byteCount != right.Length) {
+                // The string contains non-ASCII charactors.
+                // Return false because RawString always represents ASCII.
+                return false;
+            }
+            if(byteCount != left.Length) {
+                return false;
+            }
+
+            if(byteCount <= 128) {
+                var buf = stackalloc byte[byteCount];
+                fixed(char* c = right) {
+                    Encoding.ASCII.GetBytes(c, right.Length, buf, byteCount);
+                }
+                return new ReadOnlySpan<byte>(buf, byteCount).SequenceEqual(left.AsSpan());
+            }
+            else {
+                byte* buf = null;
+                try {
+                    buf = (byte*)Marshal.AllocHGlobal(byteCount);
+                    fixed(char* c = right) {
+                        Encoding.ASCII.GetBytes(c, right.Length, buf, byteCount);
+                    }
+                    return new ReadOnlySpan<byte>(buf, byteCount).SequenceEqual(left.AsSpan());
+                }
+                finally {
+                    Marshal.FreeHGlobal(new IntPtr(buf));
+                }
+            }
+        }
+
+        /// <summary>Indicates whether <paramref name="left"/> and <paramref name="right"/> are not equal.</summary>
+        /// <param name="left">the left object to compere</param>
+        /// <param name="right">the right object to compere</param>
+        /// <returns><see langword="true"/> if not equal, otherwise <see langword="false"/></returns>
+        public static bool operator !=(RawString left, string right) => !(left == right);
+
+        /// <summary>Indicates whether <paramref name="left"/> and <paramref name="right"/> and equal.</summary>
+        /// <param name="left">the left object to compere</param>
+        /// <param name="right">the right object to compere</param>
+        /// <returns><see langword="true"/> if equal, otherwise <see langword="false"/></returns>
+        public static bool operator ==(string left, RawString right) => right == left;
+
+        /// <summary>Indicates whether <paramref name="left"/> and <paramref name="right"/> are not equal.</summary>
+        /// <param name="left">the left object to compere</param>
+        /// <param name="right">the right object to compere</param>
+        /// <returns><see langword="true"/> if not equal, otherwise <see langword="false"/></returns>
+        public static bool operator !=(string left, RawString right) => !(right == left);
+
         /// <summary>Convert the <see cref="RawString"/> to <see cref="string"/></summary>
         /// <returns></returns>
         public override string ToString()
