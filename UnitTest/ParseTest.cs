@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnitTest
 {
@@ -64,29 +65,57 @@ namespace UnitTest
         [InlineData("../../../testfile/Dice.fbx")]
         public void Find(string fileName)
         {
-            var Objects = "Objects".ToASCII();
-            var Geometry = "Geometry".ToASCII();
-            var Vertices = "Vertices".ToASCII();
-
             using(var stream = File.OpenRead(fileName))
             using(var fbx = FbxParser.Parse(stream)) {
 
-                Span<int> buf = stackalloc int[fbx.Nodes.Count];
-                var objectsNode = fbx.Find(Objects);
-                var objectsNode2 = fbx.Nodes[fbx.FindIndex(Objects)];
+                FbxNode objects;
+                {
+                    const string Objects = "Objects";
+                    var ObjectsASCII = Objects.ToASCII();
 
-                Assert.True(objectsNode.Equals(objectsNode2));
-                Assert.True(buf.Slice(0, fbx.FindIndexAll(Objects, buf))
-                                            .Contains(fbx.FindIndex(Objects)));
+                    objects = fbx.Find(ObjectsASCII);
+                    Assert.True(objects == fbx.Find(Objects));
+                    {
+                        Assert.True(fbx.TryFind(ObjectsASCII, out var node) && objects == node);
+                    }
+                    {
+                        Assert.True(fbx.TryFind(Objects, out var node) && objects == node);
+                    }
+                    Assert.True(objects == fbx.Nodes[fbx.FindIndex(ObjectsASCII)]);
+                    Assert.True(objects == fbx.Nodes[fbx.FindIndex(Objects)]);
+                    Span<int> buf = new int[fbx.Nodes.Count];
+                    var indexList = buf.Slice(0, fbx.FindIndexAll(ObjectsASCII, buf)).ToArray();
+                    Assert.True(buf.Slice(0, fbx.FindIndexAll(Objects, buf)).SequenceEqual(indexList));
+                    Assert.True(fbx.FindIndexAll(Objects).SequenceEqual(indexList));
+                    Assert.True(fbx.FindIndexAll(ObjectsASCII).SequenceEqual(indexList));
+                    var contains = indexList.Contains(fbx.FindIndex(Objects));
+                    Assert.True(contains);
+                }
 
+                {
+                    const string Geometry = "Geometry";
+                    var GeometryASCII = Geometry.ToASCII();
 
-                Span<int> buf2 = stackalloc int[objectsNode.Children.Count];
-                var geometryNode = objectsNode.Find(Geometry);
-                var geometryNode2 = objectsNode.Children[objectsNode.FindIndex(Geometry)];
-                Assert.True(geometryNode.Equals(geometryNode2));
+                    var geometryNode = objects.Find(GeometryASCII);
+                    Assert.True(geometryNode == objects.Find(Geometry));
+                    {
+                        Assert.True(objects.TryFind(GeometryASCII, out var node) && geometryNode == node);
+                    }
+                    {
+                        Assert.True(objects.TryFind(Geometry, out var node) && geometryNode == node);
+                    }
+                    Assert.True(geometryNode == objects.Children[objects.FindIndex(GeometryASCII)]);
+                    Assert.True(geometryNode == objects.Children[objects.FindIndex(Geometry)]);
+                    Span<int> buf = new int[objects.Children.Count];
 
-                Assert.True(buf2.Slice(0, objectsNode.FindIndexAll(Geometry, buf2))
-                                                     .Contains(objectsNode.FindIndex(Geometry)));
+                    var indexList = buf.Slice(0, objects.FindIndexAll(GeometryASCII, buf)).ToArray();
+                    Assert.True(buf.Slice(0, objects.FindIndexAll(Geometry, buf)).SequenceEqual(indexList));
+                    Assert.True(objects.FindIndexAll(Geometry).SequenceEqual(indexList));
+                    Assert.True(objects.FindIndexAll(GeometryASCII).SequenceEqual(indexList));
+                    var contains = indexList.Contains(objects.FindIndex(Geometry));
+                    Assert.True(contains);
+                }
+
             }
         }
     }
