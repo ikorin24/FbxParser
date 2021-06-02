@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System;
+using System.Diagnostics;
 using FbxTools.Internal;
 
 namespace FbxTools
@@ -9,6 +10,7 @@ namespace FbxTools
     {
         private UnsafeRawList<FbxNode_> _nodes;
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private FbxNodeChildrenInternal RootNodes => new((FbxNode_*)_nodes.Ptr, _nodes.Count);
 
         private bool IsDisposed => _nodes.Ptr == IntPtr.Zero;
