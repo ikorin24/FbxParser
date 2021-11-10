@@ -20,6 +20,9 @@ namespace FbxTools
         private readonly string DebuggerDisplay()
         {
             if(_ptrToValue == IntPtr.Zero) {
+                if(_type == FbxPropertyType.String) {
+                    return "string: \"\"";
+                }
                 return "";
             }
             return _type switch
