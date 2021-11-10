@@ -198,19 +198,24 @@ namespace FbxTools
                     reader.Int32(out var len);
                     reader.UInt32(out var encoded);
                     reader.UInt32(out var compressedSize);
-                    UnsafeRawArray<bool> array = default;            // Don't dispose
+                    UnmanagedHandle handle = default;       // don't release
+                    int arrayLen;
                     try {
                         if(encoded != 0) {
-                            array = Decode<bool>(reader, len, (int)compressedSize);
+                            handle = Decode<bool>(reader, len, (int)compressedSize);
+                            arrayLen = len;
                         }
                         else {
-                            array = new UnsafeRawArray<bool>((int)compressedSize);
-                            reader.Read(MemoryMarshal.Cast<bool, byte>(array.AsSpan()));
+                            var byteLen = (int)compressedSize;
+                            arrayLen = byteLen / sizeof(bool);
+                            handle = UnmanagedAllocator.Alloc(byteLen);
+                            var span = new Span<byte>(handle.GetPtr(), byteLen);
+                            reader.Read(span);
                         }
-                        property.SetBoolArray(array);
+                        property.SetBoolArray(handle, arrayLen);
                     }
                     catch {
-                        array.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
@@ -219,19 +224,24 @@ namespace FbxTools
                     reader.Int32(out var len);
                     reader.UInt32(out var encoded);
                     reader.UInt32(out var compressedSize);
-                    UnsafeRawArray<int> array = default;            // Don't dispose
+                    UnmanagedHandle handle = default;       // don't release
+                    int arrayLen;
                     try {
                         if(encoded != 0) {
-                            array = Decode<int>(reader, len, (int)compressedSize);
+                            handle = Decode<int>(reader, len, (int)compressedSize);
+                            arrayLen = len;
                         }
                         else {
-                            array = new UnsafeRawArray<int>((int)compressedSize / sizeof(int));
-                            reader.Read(MemoryMarshal.Cast<int, byte>(array.AsSpan()));
+                            var byteLen = (int)compressedSize;
+                            arrayLen = byteLen / sizeof(int);
+                            handle = UnmanagedAllocator.Alloc(byteLen);
+                            var span = new Span<byte>(handle.GetPtr(), byteLen);
+                            reader.Read(span);
                         }
-                        property.SetInt32Array(array);
+                        property.SetInt32Array(handle, arrayLen);
                     }
                     catch {
-                        array.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
@@ -240,19 +250,24 @@ namespace FbxTools
                     reader.Int32(out var len);
                     reader.UInt32(out var encoded);
                     reader.UInt32(out var compressedSize);
-                    UnsafeRawArray<float> array = default;            // Don't dispose
+                    UnmanagedHandle handle = default;       // don't release
+                    int arrayLen;
                     try {
                         if(encoded != 0) {
-                            array = Decode<float>(reader, len, (int)compressedSize);
+                            handle = Decode<float>(reader, len, (int)compressedSize);
+                            arrayLen = len;
                         }
                         else {
-                            array = new UnsafeRawArray<float>((int)compressedSize / sizeof(float));
-                            reader.Read(MemoryMarshal.Cast<float, byte>(array.AsSpan()));
+                            var byteLen = (int)compressedSize;
+                            arrayLen = byteLen / sizeof(float);
+                            handle = UnmanagedAllocator.Alloc(byteLen);
+                            var span = new Span<byte>(handle.GetPtr(), byteLen);
+                            reader.Read(span);
                         }
-                        property.SetFloatArray(array);
+                        property.SetFloatArray(handle, arrayLen);
                     }
                     catch {
-                        array.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
@@ -261,19 +276,24 @@ namespace FbxTools
                     reader.Int32(out var len);
                     reader.UInt32(out var encoded);
                     reader.UInt32(out var compressedSize);
-                    UnsafeRawArray<double> array = default;
+                    UnmanagedHandle handle = default;       // don't release
+                    int arrayLen;
                     try {
                         if(encoded != 0) {
-                            array = Decode<double>(reader, len, (int)compressedSize);
+                            handle = Decode<double>(reader, len, (int)compressedSize);
+                            arrayLen = len;
                         }
                         else {
-                            array = new UnsafeRawArray<double>((int)compressedSize / sizeof(double));
-                            reader.Read(MemoryMarshal.Cast<double, byte>(array.AsSpan()));
+                            var byteLen = (int)compressedSize;
+                            arrayLen = byteLen / sizeof(double);
+                            handle = UnmanagedAllocator.Alloc(byteLen);
+                            var span = new Span<byte>(handle.GetPtr(), byteLen);
+                            reader.Read(span);
                         }
-                        property.SetDoubleArray(array);
+                        property.SetDoubleArray(handle, arrayLen);
                     }
                     catch {
-                        array.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
@@ -282,32 +302,39 @@ namespace FbxTools
                     reader.Int32(out var len);
                     reader.UInt32(out var encoded);
                     reader.UInt32(out var compressedSize);
-                    UnsafeRawArray<long> array = default;
+                    UnmanagedHandle handle = default;       // don't release
+                    int arrayLen;
                     try {
                         if(encoded != 0) {
-                            array = Decode<long>(reader, len, (int)compressedSize);
+                            handle = Decode<long>(reader, len, (int)compressedSize);
+                            arrayLen = len;
                         }
                         else {
-                            array = new UnsafeRawArray<long>((int)compressedSize / sizeof(long));
-                            reader.Read(MemoryMarshal.Cast<long, byte>(array.AsSpan()));
+                            var byteLen = (int)compressedSize;
+                            arrayLen = byteLen / sizeof(long);
+                            handle = UnmanagedAllocator.Alloc(byteLen);
+                            var span = new Span<byte>(handle.GetPtr(), byteLen);
+                            reader.Read(span);
                         }
-                        property.SetInt64Array(array);
+                        property.SetInt64Array(handle, arrayLen);
                     }
                     catch {
-                        array.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
                 }
                 case RAW_BINARY_PROPERTY: {
                     reader.Int32(out var len);
-                    var buf = new UnsafeRawArray<byte>(len);
+                    UnmanagedHandle handle = default;
                     try {
-                        reader.Read(buf.AsSpan());
-                        property.SetByteArray(buf);
+                        handle = UnmanagedAllocator.Alloc(len);
+                        var span = new Span<byte>(handle.GetPtr(), len);
+                        reader.Read(span);
+                        property.SetByteArray(handle, len);
                     }
                     catch {
-                        buf.Dispose();
+                        UnmanagedAllocator.Free(handle);
                         throw;
                     }
                     break;
@@ -319,7 +346,7 @@ namespace FbxTools
             }
 
             #region (local func) Decode compressed array data
-            static UnsafeRawArray<T> Decode<T>(Reader reader, int arrayLength, int compressedSize) where T : unmanaged
+            static UnmanagedHandle Decode<T>(Reader reader, int arrayLength, int compressedSize) where T : unmanaged
             {
                 const int deflateMetaDataSize = 2;
                 reader.Int16(out var _);            // deflateMetaData (not be used)
@@ -332,20 +359,22 @@ namespace FbxTools
                 var ptr = (byte*)buf.Ptr;
                 using var ms = (_ms is null) ? (_ms = new MemoryStreamUM(ptr, buf.Length)) : _ms.RefreshInstance(ptr, buf.Length);
                 using var ds = new DeflateStream(ms, CompressionMode.Decompress);
-                var decoded = new UnsafeRawArray<T>(arrayLength);
+
+                var decodedByteLen = arrayLength * sizeof(T);
+                var handle = UnmanagedAllocator.Alloc(decodedByteLen);
                 try {
-                    var decodedBytes = MemoryMarshal.Cast<T, byte>(decoded.AsSpan());
+                    var decodedSpan = new Span<byte>(handle.GetPtr(), decodedByteLen);
                     while(true) {
-                        var readlen = ds.Read(decodedBytes);
+                        var readlen = ds.Read(decodedSpan);
                         if(readlen == 0) { break; }
-                        decodedBytes = decodedBytes.Slice(readlen);
+                        decodedSpan = decodedSpan.Slice(readlen);
                     }
                 }
                 catch {
-                    decoded.Dispose();
+                    UnmanagedAllocator.Free(handle);
                     throw;
                 }
-                return decoded;
+                return handle;
             }
             #endregion
         }

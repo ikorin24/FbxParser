@@ -40,6 +40,9 @@ namespace FbxTools.Internal
         internal FbxNode_(RawStringMem name, int propCount)
         {
             _name = name;
+
+            // [NOTE]
+            // Don't use UnmanagedAllocator. See the comment in Free() method.
             _properties = new UnsafeRawArray<FbxProperty>(propCount);
 
             const int InitialCapacity = 16;
@@ -243,6 +246,13 @@ namespace FbxTools.Internal
 
         internal void Free()
         {
+            // [NOTE]
+            // Don't make _properties UnmanagedHandle.
+            // AccessViolationException may occur if you use UnmanagedHandle
+            // because it may share its memory with another one which is already released.
+            // '_properties[i].Free()' must be called, but it is not accessible
+            // in the case that '_properties' is already released.
+
             for(int i = 0; i < _properties.Length; i++) {
                 _properties[i].Free();
             }

@@ -11,7 +11,7 @@ namespace FbxTools.Internal
         private static SharedHandle _sharedLarge;
 
         private const int SelfOwnThreshold = 128;   // It must be smaller than 'SharedSize'
-        private const int SharedSize = 4096;
+        private const int SharedSize = 2048;
 
         public static UnmanagedHandle Alloc(int byteSize)
         {
@@ -72,6 +72,11 @@ namespace FbxTools.Internal
 
             public void CleanUp()
             {
+#if DEBUG
+                if(_availableShared != 0) {
+                    Debug.WriteLine($"Unused memory: {_availableShared} bytes (CleanUp)");
+                }
+#endif
                 _shared = UnmanagedHandle.Null;
                 _sharedOffset = 0;
                 _availableShared = 0;

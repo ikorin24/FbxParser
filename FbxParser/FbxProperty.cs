@@ -118,51 +118,51 @@ namespace FbxTools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetBoolArray(UnsafeRawArray<bool> array)
+        internal void SetBoolArray(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.BoolArray;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(bool));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetInt32Array(UnsafeRawArray<int> array)
+        internal void SetInt32Array(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.Int32Array;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(int));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetInt64Array(UnsafeRawArray<long> array)
+        internal void SetInt64Array(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.Int64Array;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(long));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetFloatArray(UnsafeRawArray<float> array)
+        internal void SetFloatArray(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.FloatArray;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(float));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetDoubleArray(UnsafeRawArray<double> array)
+        internal void SetDoubleArray(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.DoubleArray;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(double));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetByteArray(UnsafeRawArray<byte> array)
+        internal void SetByteArray(UnmanagedHandle handle, int arrayLength)
         {
             _type = FbxPropertyType.ByteArray;
-            _valueCountOfArray = array.Length;
-            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(byte));
+            _valueCountOfArray = arrayLength;
+            _ptrToValue = handle;
         }
         #endregion
 
