@@ -185,9 +185,6 @@ namespace FbxTools
         /// <param name="left">the left object to compere</param>
         /// <param name="right">the right object to compere</param>
         /// <returns><see langword="true"/> if equal, otherwise <see langword="false"/></returns>
-#if NET5_0_OR_GREATER
-        [SkipLocalsInit]
-#endif
         public static bool operator ==(RawString left, string right)
         {
             return ReEncodingOperation.Func(right, left, &Compere, &Fallback);

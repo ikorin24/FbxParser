@@ -12,7 +12,7 @@ namespace FbxTools.Internal
     internal unsafe struct FbxNode_ : IEquatable<FbxNode_>
     {
         // I want to use 'UnsafeRawList<FbxNode_>' as children,
-        // but TypeLoadException happens in xunit test. (It may bug of xunit.)
+        // but TypeLoadException happens in xunit test. (It may be bug of xunit.)
         private IntPtr _children;   // FbxNode_*
         private int _childrenCapacity;
         private int _childrenCount;
@@ -136,9 +136,7 @@ namespace FbxTools.Internal
             static int Fallback() => 0;
         }
 
-#if NET5_0_OR_GREATER
         [SkipLocalsInit]
-#endif
         public static int[] FindIndexAll(FbxNodeChildrenInternal children, ReadOnlySpan<byte> nodeName)
         {
             if(children.Count <= 128) {

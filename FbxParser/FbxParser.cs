@@ -66,9 +66,7 @@ namespace FbxTools
             }
         }
 
-#if NET5_0
         [SkipLocalsInit]
-#endif
         private static void ParseHeader(Reader reader, out int version)
         {
             Span<byte> magic = stackalloc byte[MagicWord.Length];
@@ -334,7 +332,12 @@ namespace FbxTools
                 using var ds = new DeflateStream(ms, CompressionMode.Decompress);
                 var decoded = new UnsafeRawArray<T>(arrayLength);
                 try {
-                    ds.Read(MemoryMarshal.Cast<T, byte>(decoded.AsSpan()));
+                    var decodedBytes = MemoryMarshal.Cast<T, byte>(decoded.AsSpan());
+                    while(true) {
+                        var readlen = ds.Read(decodedBytes);
+                        if(readlen == 0) { break; }
+                        decodedBytes = decodedBytes.Slice(readlen);
+                    }
                 }
                 catch {
                     decoded.Dispose();

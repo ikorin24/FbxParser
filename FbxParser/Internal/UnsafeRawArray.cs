@@ -156,19 +156,14 @@ namespace FbxTools.Internal
     internal class UnsafeRawArrayDebuggerTypeProxy<T> where T : unmanaged
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private readonly UnsafeRawArray<T> _entity;
+        private readonly T[] _items;
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Items
-        {
-            get
-            {
-                var items = new T[_entity.Length];
-                _entity.CopyTo(items, 0);
-                return items;
-            }
-        }
+        public T[] Items => _items;
 
-        public UnsafeRawArrayDebuggerTypeProxy(UnsafeRawArray<T> entity) => _entity = entity;
+        public UnsafeRawArrayDebuggerTypeProxy(UnsafeRawArray<T> entity)
+        {
+            _items = entity.AsSpan().ToArray();
+        }
     }
 }

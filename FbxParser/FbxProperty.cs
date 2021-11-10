@@ -529,9 +529,7 @@ namespace FbxTools
         }
         #endregion
 
-#if NET5_0
         [DoesNotReturn]
-#endif
         private static void ThrowInvalidCast(FbxPropertyType type)
         {
             throw new InvalidCastException($"Property type is {type}.");
