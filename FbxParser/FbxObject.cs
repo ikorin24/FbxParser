@@ -44,6 +44,12 @@ namespace FbxTools
         /// <returns>a found node</returns>
         public FbxNode Find(string nodeName) => FbxNode_.Find(RootNodes, nodeName);
 
+        public FbxNode[] FindAll(ReadOnlySpan<byte> nodeName) => FbxNode_.FindAll(RootNodes, nodeName);
+
+        public FbxNode[] FindAll(RawString nodeName) => FbxNode_.FindAll(RootNodes, nodeName.AsSpan());
+
+        public FbxNode[] FindAll(string nodeName) => FbxNode_.FindAll(RootNodes, nodeName);
+
         /// <summary>Try to find a child node of specified name. Returns a first found node. (This method is not recursive, just find from children)</summary>
         /// <param name="nodeName">node name as ASCII</param>
         /// <param name="node">a found node</param>

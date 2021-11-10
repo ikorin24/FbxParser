@@ -78,6 +78,49 @@ namespace FbxTools.Internal
             return false;
         }
 
+        public static FbxNode[] FindAll(FbxNodeChildrenInternal children, string nodeName)
+        {
+            return ReEncodingOperation.Func(nodeName, children, &FindAllLocal, &Fallback);
+
+            static FbxNode[] FindAllLocal(ReadOnlySpan<byte> ascii, FbxNodeChildrenInternal children) => FindAll(children, ascii);
+            static FbxNode[] Fallback() => Array.Empty<FbxNode>();
+        }
+
+        [SkipLocalsInit]
+        public static FbxNode[] FindAll(FbxNodeChildrenInternal children, ReadOnlySpan<byte> nodeName)
+        {
+            if(children.Count <= 128) {
+                Span<int> buf = stackalloc int[128];
+                var count = FindIndexAll(children, nodeName, buf);
+                GetNodes(children, buf.Slice(0, count), out var nodes);
+                return nodes;
+            }
+            else {
+                int* p = null;
+                try {
+                    p = (int*)Marshal.AllocHGlobal(sizeof(int) * children.Count);
+                    var buf = new Span<int>(p, children.Count);
+                    var count = FindIndexAll(children, nodeName, buf);
+                    GetNodes(children, buf.Slice(0, count), out var nodes);
+                    return nodes;
+                }
+                finally {
+                    Marshal.FreeHGlobal(new IntPtr(p));
+                }
+            }
+
+            static void GetNodes(FbxNodeChildrenInternal children, ReadOnlySpan<int> indexList, out FbxNode[] nodes)
+            {
+                if(indexList.Length == 0) {
+                    nodes = Array.Empty<FbxNode>();
+                }
+                nodes = new FbxNode[indexList.Length];
+                for(int i = 0; i < indexList.Length; i++) {
+                    nodes[i] = children.IndexOf(indexList[i]);
+                }
+            }
+        }
+
         public static bool TryFind(FbxNodeChildrenInternal children, string nodeName, out FbxNode node)
         {
             bool isFound;

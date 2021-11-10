@@ -35,6 +35,14 @@ namespace FbxTools.Internal
             Count = count;
         }
 
+        public FbxNode IndexOf(int i)
+        {
+#if DEBUG
+            if((uint)i >= (uint)Count) { throw new ArgumentOutOfRangeException(nameof(i)); }
+#endif
+            return new FbxNode(Pointer + i);
+        }
+
         public ReadOnlySpan<FbxNode_> AsSpan() =>
 #if SPAN_API
             MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef<FbxNode_>(Pointer), Count);
