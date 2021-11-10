@@ -12,10 +12,13 @@ namespace FbxTools.Internal
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe readonly struct RawStringMem : IDisposable, IEquatable<RawStringMem>
     {
-        private readonly IntPtr _headPointer;
+        private readonly UnmanagedHandle _handle;
         private readonly int _byteLength;
+
+        public UnmanagedHandle Handle => _handle;
+
         public readonly int ByteLength => _byteLength;
-        public readonly IntPtr Ptr => _headPointer;
+        public readonly IntPtr Ptr => _handle.Ptr;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal RawStringMem(int byteLength)
@@ -26,8 +29,7 @@ namespace FbxTools.Internal
                 this = default;
             }
             else {
-                UnmanagedMemoryHelper.RegisterNewAllocatedBytes(byteLength);
-                _headPointer = Marshal.AllocHGlobal(byteLength);
+                _handle = UnmanagedAllocator.Alloc(byteLength);
                 _byteLength = byteLength;
             }
         }
@@ -36,41 +38,34 @@ namespace FbxTools.Internal
         public readonly override string ToString()
         {
             if(_byteLength == 0) { return string.Empty; }
-            return Encoding.ASCII.GetString((byte*)_headPointer, _byteLength);
+            return Encoding.ASCII.GetString((byte*)Ptr, _byteLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly Span<byte> AsSpan()
         {
 #if NETSTANDARD2_0
-            return new Span<byte>((void*)_headPointer, _byteLength);
+            return new Span<byte>((void*)Ptr, _byteLength);
 #else
-            return MemoryMarshal.CreateSpan(ref Unsafe.AsRef<byte>((void*)_headPointer), _byteLength);
+            return MemoryMarshal.CreateSpan(ref Unsafe.AsRef<byte>((void*)Ptr), _byteLength);
 #endif
         }
 
-        public RawString AsRawString() => new RawString(_headPointer, _byteLength);
+        public RawString AsRawString() => new RawString(Ptr, _byteLength);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            if(_headPointer != IntPtr.Zero) {
-                UnmanagedMemoryHelper.RegisterReleasedBytes(_byteLength);
-                Marshal.FreeHGlobal(_headPointer);
-                Unsafe.AsRef(_headPointer) = IntPtr.Zero;     // Clear pointer into null for safety.
-            }
+            UnmanagedAllocator.Free(_handle);
+            Unsafe.AsRef(_handle) = UnmanagedHandle.Null;
             Unsafe.AsRef(_byteLength) = 0;
         }
 
         public override bool Equals(object? obj) => obj is RawStringMem str && Equals(str);
 
-        public bool Equals(RawStringMem other)
-        {
-            return _headPointer == other._headPointer &&
-                   _byteLength == other._byteLength;
-        }
+        public bool Equals(RawStringMem other) => _handle == other._handle && _byteLength == other._byteLength;
 
-        public override int GetHashCode() => HashCode.Combine(_headPointer, _byteLength);
+        public override int GetHashCode() => HashCode.Combine(_handle, _byteLength);
 
         public static implicit operator RawString(RawStringMem str) => str.AsRawString();
     }

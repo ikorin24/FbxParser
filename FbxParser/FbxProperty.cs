@@ -15,11 +15,11 @@ namespace FbxTools
     {
         private FbxPropertyType _type;
         private int _valueCountOfArray;
-        private IntPtr _ptrToValue;
+        private UnmanagedHandle _ptrToValue;
 
         private readonly string DebuggerDisplay()
         {
-            if(_ptrToValue == IntPtr.Zero) {
+            if(_ptrToValue.IsNull) {
                 if(_type == FbxPropertyType.String) {
                     return "string: \"\"";
                 }
@@ -33,7 +33,7 @@ namespace FbxTools
                 FbxPropertyType.Float => $"float: {AsFloat()}",
                 FbxPropertyType.Double => $"double: {AsDouble()}",
                 FbxPropertyType.Bool => $"bool: {AsBool()}",
-                FbxPropertyType.String => $"string: \"{Encoding.ASCII.GetString((byte*)_ptrToValue, _valueCountOfArray)}\"",
+                FbxPropertyType.String => $"string: \"{Encoding.ASCII.GetString((byte*)_ptrToValue.Ptr, _valueCountOfArray)}\"",
                 FbxPropertyType.Int32Array => $"int[{_valueCountOfArray}]",
                 FbxPropertyType.Int64Array => $"long[{_valueCountOfArray}]",
                 FbxPropertyType.FloatArray => $"float[{_valueCountOfArray}]",
@@ -47,36 +47,10 @@ namespace FbxTools
         /// <summary>Get property type</summary>
         public readonly FbxPropertyType Type => _type;
 
-        private static IntPtr Alloc(int byteSize)
-        {
-            UnmanagedMemoryHelper.RegisterNewAllocatedBytes(byteSize);
-            return Marshal.AllocHGlobal(byteSize);
-        }
-
         internal void Free()
         {
-#if DEBUG
-            var size = _type switch
-            {
-                FbxPropertyType.Int32 => sizeof(int),
-                FbxPropertyType.Int16 => sizeof(short),
-                FbxPropertyType.Int64 => sizeof(long),
-                FbxPropertyType.Float => sizeof(float),
-                FbxPropertyType.Double => sizeof(double),
-                FbxPropertyType.Bool => sizeof(bool),
-                FbxPropertyType.String => _valueCountOfArray * sizeof(byte),
-                FbxPropertyType.Int32Array => _valueCountOfArray * sizeof(int),
-                FbxPropertyType.Int64Array => _valueCountOfArray * sizeof(long),
-                FbxPropertyType.FloatArray => _valueCountOfArray * sizeof(float),
-                FbxPropertyType.DoubleArray => _valueCountOfArray * sizeof(double),
-                FbxPropertyType.BoolArray => _valueCountOfArray * sizeof(bool),
-                FbxPropertyType.ByteArray => _valueCountOfArray * sizeof(byte),
-                _ => 0,
-            };
-            UnmanagedMemoryHelper.RegisterReleasedBytes(size);
-#endif
-            Marshal.FreeHGlobal(_ptrToValue);
-            _ptrToValue = IntPtr.Zero;
+            UnmanagedAllocator.Free(_ptrToValue);
+            _ptrToValue = UnmanagedHandle.Null;
             _valueCountOfArray = 0;
         }
 
@@ -86,8 +60,8 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Int16;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(short));
-            *(short*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(short));
+            *(short*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,8 +69,8 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Int32;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(int));
-            *(int*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(int));
+            *(int*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -104,16 +78,16 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Int64;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(long));
-            *(long*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(long));
+            *(long*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetString(byte* strInHeap, int length)
+        internal void SetString(RawStringMem str)
         {
             _type = FbxPropertyType.String;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)strInHeap;
+            _valueCountOfArray = str.ByteLength;
+            _ptrToValue = str.Handle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -121,8 +95,8 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Bool;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(bool));
-            *(bool*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(bool));
+            *(bool*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,8 +104,8 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Float;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(float));
-            *(float*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(float));
+            *(float*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,56 +113,56 @@ namespace FbxTools
         {
             _type = FbxPropertyType.Double;
             _valueCountOfArray = 0;
-            _ptrToValue = Alloc(sizeof(double));
-            *(double*)_ptrToValue = value;
+            _ptrToValue = UnmanagedAllocator.Alloc(sizeof(double));
+            *(double*)_ptrToValue.Ptr = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetBoolArray(bool* arrayInHeap, int length)
+        internal void SetBoolArray(UnsafeRawArray<bool> array)
         {
             _type = FbxPropertyType.BoolArray;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(bool));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetInt32Array(int* arrayInHeap, int length)
+        internal void SetInt32Array(UnsafeRawArray<int> array)
         {
             _type = FbxPropertyType.Int32Array;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(int));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetInt64Array(long* arrayInHeap, int length)
+        internal void SetInt64Array(UnsafeRawArray<long> array)
         {
             _type = FbxPropertyType.Int64Array;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(long));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetFloatArray(float* arrayInHeap, int length)
+        internal void SetFloatArray(UnsafeRawArray<float> array)
         {
             _type = FbxPropertyType.FloatArray;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(float));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetDoubleArray(double* arrayInHeap, int length)
+        internal void SetDoubleArray(UnsafeRawArray<double> array)
         {
             _type = FbxPropertyType.DoubleArray;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(double));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetByteArray(byte* arrayInHeap, int length)
+        internal void SetByteArray(UnsafeRawArray<byte> array)
         {
             _type = FbxPropertyType.ByteArray;
-            _valueCountOfArray = length;
-            _ptrToValue = (IntPtr)arrayInHeap;
+            _valueCountOfArray = array.Length;
+            _ptrToValue = UnmanagedHandle.Own(array.Ptr, array.Length * sizeof(byte));
         }
         #endregion
 
@@ -200,7 +174,7 @@ namespace FbxTools
         public readonly bool TryAsInt16(out short value)
         {
             if(_type == FbxPropertyType.Int16) {
-                value = *(short*)_ptrToValue;
+                value = *(short*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -226,7 +200,7 @@ namespace FbxTools
         public readonly bool TryAsInt32(out int value)
         {
             if(_type == FbxPropertyType.Int32) {
-                value = *(int*)_ptrToValue;
+                value = *(int*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -252,7 +226,7 @@ namespace FbxTools
         public readonly bool TryAsInt64(out long value)
         {
             if(_type == FbxPropertyType.Int64) {
-                value = *(long*)_ptrToValue;
+                value = *(long*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -278,7 +252,7 @@ namespace FbxTools
         public readonly bool TryAsString(out RawString value)
         {
             if(_type == FbxPropertyType.String) {
-                value = new RawString(_ptrToValue, _valueCountOfArray);
+                value = new RawString(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawString.Empty;
@@ -304,7 +278,7 @@ namespace FbxTools
         public readonly bool TryAsBool(out bool value)
         {
             if(_type == FbxPropertyType.Bool) {
-                value = *(bool*)_ptrToValue;
+                value = *(bool*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -330,7 +304,7 @@ namespace FbxTools
         public readonly bool TryAsFloat(out float value)
         {
             if(_type == FbxPropertyType.Float) {
-                value = *(float*)_ptrToValue;
+                value = *(float*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -356,7 +330,7 @@ namespace FbxTools
         public readonly bool TryAsDouble(out double value)
         {
             if(_type == FbxPropertyType.Double) {
-                value = *(double*)_ptrToValue;
+                value = *(double*)_ptrToValue.Ptr;
                 return true;
             }
             value = default;
@@ -382,7 +356,7 @@ namespace FbxTools
         public readonly bool TryAsBoolArray(out RawArray<bool> value)
         {
             if(_type == FbxPropertyType.BoolArray) {
-                value = new RawArray<bool>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<bool>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<bool>.Empty;
@@ -408,7 +382,7 @@ namespace FbxTools
         public readonly bool TryAsInt32Array(out RawArray<int> value)
         {
             if(_type == FbxPropertyType.Int32Array) {
-                value = new RawArray<int>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<int>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<int>.Empty;
@@ -434,7 +408,7 @@ namespace FbxTools
         public readonly bool TryAsInt64Array(out RawArray<long> value)
         {
             if(_type == FbxPropertyType.Int64Array) {
-                value = new RawArray<long>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<long>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<long>.Empty;
@@ -460,7 +434,7 @@ namespace FbxTools
         public readonly bool TryAsFloatArray(out RawArray<float> value)
         {
             if(_type == FbxPropertyType.FloatArray) {
-                value = new RawArray<float>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<float>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<float>.Empty;
@@ -486,7 +460,7 @@ namespace FbxTools
         public readonly bool TryAsDoubleArray(out RawArray<double> value)
         {
             if(_type == FbxPropertyType.DoubleArray) {
-                value = new RawArray<double>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<double>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<double>.Empty;
@@ -512,7 +486,7 @@ namespace FbxTools
         public readonly bool TryAsByteArray(out RawArray<byte> value)
         {
             if(_type == FbxPropertyType.ByteArray) {
-                value = new RawArray<byte>(_ptrToValue, _valueCountOfArray);
+                value = new RawArray<byte>(_ptrToValue.Ptr, _valueCountOfArray);
                 return true;
             }
             value = RawArray<byte>.Empty;

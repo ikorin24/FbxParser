@@ -30,6 +30,17 @@ namespace FbxTools.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Read(Span<byte> buffer)
         {
+            try {
+                ReadPrivate(buffer);
+            }
+            catch {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ReadPrivate(Span<byte> buffer)
+        {
 #if NETSTANDARD2_0
             if(buffer.Length <= SharedArraySize) {
                 var sharedArray = SharedArray;

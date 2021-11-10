@@ -58,6 +58,7 @@ namespace FbxTools
                     if(!ParseNodeRecord(reader, version, out var node)) { break; }
                     nodes.Add(node);
                 }
+                UnmanagedAllocator.CleanUpSharedHandle();
                 return new FbxObject(nodes);
             }
             catch {
@@ -182,9 +183,10 @@ namespace FbxTools
                     RawStringMem str = default;
                     try {
                         str = new RawStringMem(len);
-                        reader.Read(str.AsSpan());
-                        SanitizeString(str.AsSpan());
-                        property.SetString((byte*)str.Ptr, str.ByteLength);
+                        var span = str.AsSpan();
+                        reader.Read(span);
+                        SanitizeString(span);
+                        property.SetString(str);
                     }
                     catch {
                         str.Dispose();
@@ -205,7 +207,7 @@ namespace FbxTools
                             array = new UnsafeRawArray<bool>((int)compressedSize);
                             reader.Read(MemoryMarshal.Cast<bool, byte>(array.AsSpan()));
                         }
-                        property.SetBoolArray((bool*)array.Ptr, array.Length);
+                        property.SetBoolArray(array);
                     }
                     catch {
                         array.Dispose();
@@ -226,7 +228,7 @@ namespace FbxTools
                             array = new UnsafeRawArray<int>((int)compressedSize / sizeof(int));
                             reader.Read(MemoryMarshal.Cast<int, byte>(array.AsSpan()));
                         }
-                        property.SetInt32Array((int*)array.Ptr, array.Length);
+                        property.SetInt32Array(array);
                     }
                     catch {
                         array.Dispose();
@@ -247,7 +249,7 @@ namespace FbxTools
                             array = new UnsafeRawArray<float>((int)compressedSize / sizeof(float));
                             reader.Read(MemoryMarshal.Cast<float, byte>(array.AsSpan()));
                         }
-                        property.SetFloatArray((float*)array.Ptr, array.Length);
+                        property.SetFloatArray(array);
                     }
                     catch {
                         array.Dispose();
@@ -268,7 +270,7 @@ namespace FbxTools
                             array = new UnsafeRawArray<double>((int)compressedSize / sizeof(double));
                             reader.Read(MemoryMarshal.Cast<double, byte>(array.AsSpan()));
                         }
-                        property.SetDoubleArray((double*)array.Ptr, array.Length);
+                        property.SetDoubleArray(array);
                     }
                     catch {
                         array.Dispose();
@@ -289,7 +291,7 @@ namespace FbxTools
                             array = new UnsafeRawArray<long>((int)compressedSize / sizeof(long));
                             reader.Read(MemoryMarshal.Cast<long, byte>(array.AsSpan()));
                         }
-                        property.SetInt64Array((long*)array.Ptr, array.Length);
+                        property.SetInt64Array(array);
                     }
                     catch {
                         array.Dispose();
@@ -302,7 +304,7 @@ namespace FbxTools
                     var buf = new UnsafeRawArray<byte>(len);
                     try {
                         reader.Read(buf.AsSpan());
-                        property.SetByteArray((byte*)buf.Ptr, buf.Length);
+                        property.SetByteArray(buf);
                     }
                     catch {
                         buf.Dispose();

@@ -30,6 +30,9 @@ namespace FbxTools.Internal
         [Conditional(DEBUG)]
         internal static void RegisterReleasedBytes(int releasedByteLength)
         {
+            if(releasedByteLength == 0) {
+                return;
+            }
             _allocatedSize -= releasedByteLength;
             Debug.WriteLine($"release {releasedByteLength,8} bytes, all : {_allocatedSize,8} bytes.");
         }
